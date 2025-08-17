@@ -1,6 +1,6 @@
 {
   "name": "@ecom-co/grpc",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "gRPC library for e-commerce platform",
   "author": "Nam077",
   "license": "ISC",
