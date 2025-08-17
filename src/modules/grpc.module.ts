@@ -2,6 +2,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 
 import { GrpcBootstrapper } from './grpc-bootstrapper';
 import { GrpcService } from './grpc.service';
+import { GrpcServiceManager } from './grpc-service-manager';
 import { GrpcCoreModuleOptions } from './interfaces';
 import { ServiceRegistry } from './service-registry';
 
@@ -24,9 +25,10 @@ export class GrpcModule {
                     useFactory: () => new ServiceRegistry(options.services || []),
                 },
                 GrpcService,
+                GrpcServiceManager,
                 GrpcBootstrapper, // Auto-bootstrap services on application start
             ],
-            exports: [GrpcService, ServiceRegistry, GrpcBootstrapper, 'GRPC_CORE_OPTIONS'],
+            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcBootstrapper, 'GRPC_CORE_OPTIONS'],
             global: true,
         };
     }
@@ -49,9 +51,10 @@ export class GrpcModule {
                     inject: ['GRPC_CORE_OPTIONS'],
                 },
                 GrpcService,
+                GrpcServiceManager,
                 GrpcBootstrapper,
             ],
-            exports: [GrpcService, ServiceRegistry, GrpcBootstrapper, 'GRPC_CORE_OPTIONS'],
+            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcBootstrapper, 'GRPC_CORE_OPTIONS'],
             global: true,
         };
     }
