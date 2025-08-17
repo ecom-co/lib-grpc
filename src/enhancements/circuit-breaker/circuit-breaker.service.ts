@@ -1,31 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, CircuitBreakerMetrics } from '../interfaces';
+import { CircuitBreakerConfig, CircuitBreakerMetrics, CircuitBreakerState } from './interfaces';
 
 @Injectable()
-export class GrpcCircuitBreaker implements CircuitBreaker {
-    private readonly logger = new Logger(GrpcCircuitBreaker.name);
+export class CircuitBreakerService {
+    private readonly logger = new Logger(CircuitBreakerService.name);
     private state: CircuitBreakerState;
     private readonly config: CircuitBreakerConfig;
     private metrics: CircuitBreakerMetrics;
     private readonly requests: Array<{ timestamp: Date; success: boolean; responseTime: number }> = [];
 
     constructor(config: CircuitBreakerConfig) {
-        const defaultConfig: CircuitBreakerConfig = {
-            failureThreshold: 5,
-            recoveryTimeout: 30000,
-            monitoringPeriod: 60000,
-            expectedErrors: ['UNAVAILABLE', 'DEADLINE_EXCEEDED', 'INTERNAL'],
-        };
-
-        this.config = { ...defaultConfig, ...config };
-
+        this.config = config;
         this.state = {
             state: 'CLOSED',
             failureCount: 0,
             nextAttempt: new Date(),
         };
-
         this.metrics = {
             totalRequests: 0,
             successfulRequests: 0,
@@ -33,17 +24,14 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
             circuitOpenCount: 0,
             averageResponseTime: 0,
         };
-
-        this.startMetricsCleanup();
     }
 
-    execute = async <T>(operation: () => Promise<T>): Promise<T> => {
+    async execute<T>(operation: () => Promise<T>): Promise<T> {
         if (this.state.state === 'OPEN') {
             if (Date.now() < this.state.nextAttempt.getTime()) {
-                throw new Error('Circuit breaker is OPEN - requests are not allowed');
+                throw new Error('Circuit breaker is OPEN - requests blocked');
             }
             this.state.state = 'HALF_OPEN';
-            this.logger.log('Circuit breaker moved to HALF_OPEN state');
         }
 
         const startTime = Date.now();
@@ -58,7 +46,6 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
             if (this.state.state === 'HALF_OPEN') {
                 this.state.state = 'CLOSED';
                 this.state.failureCount = 0;
-                this.logger.log('Circuit breaker moved to CLOSED state');
             }
 
             return result;
@@ -67,21 +54,23 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
             this.recordFailure(error as Error, responseTime);
             throw error;
         }
-    };
+    }
 
-    getState = (): CircuitBreakerState => ({ ...this.state });
+    getState(): CircuitBreakerState {
+        return { ...this.state };
+    }
 
-    reset = (): void => {
+    getMetrics(): CircuitBreakerMetrics {
+        return { ...this.metrics };
+    }
+
+    reset(): void {
         this.state = {
             state: 'CLOSED',
             failureCount: 0,
             nextAttempt: new Date(),
         };
-        this.logger.log('Circuit breaker reset to CLOSED state');
-    };
-
-    getMetrics(): CircuitBreakerMetrics {
-        return { ...this.metrics };
+        this.logger.log('🔄 Circuit breaker reset to CLOSED');
     }
 
     private recordSuccess(responseTime: number): void {
@@ -90,7 +79,6 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
             success: true,
             responseTime,
         });
-
         this.metrics.successfulRequests++;
         this.updateAverageResponseTime();
     }
@@ -101,7 +89,6 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
             success: false,
             responseTime,
         });
-
         this.metrics.failedRequests++;
         this.updateAverageResponseTime();
 
@@ -117,7 +104,7 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
                 this.state.state = 'OPEN';
                 this.state.nextAttempt = new Date(Date.now() + this.config.recoveryTimeout);
                 this.metrics.circuitOpenCount++;
-                this.logger.warn(`Circuit breaker opened after ${this.state.failureCount} failures`);
+                this.logger.warn(`🔴 Circuit breaker OPENED after ${this.state.failureCount} failures`);
             }
         }
     }
@@ -133,23 +120,5 @@ export class GrpcCircuitBreaker implements CircuitBreaker {
     private getRecentRequests(): Array<{ timestamp: Date; success: boolean; responseTime: number }> {
         const cutoffTime = new Date(Date.now() - this.config.monitoringPeriod);
         return this.requests.filter((req) => req.timestamp > cutoffTime);
-    }
-
-    private startMetricsCleanup(): void {
-        setInterval(() => {
-            const cutoffTime = new Date(Date.now() - this.config.monitoringPeriod);
-            const originalLength = this.requests.length;
-
-            // Remove old requests
-            for (let i = this.requests.length - 1; i >= 0; i--) {
-                if (this.requests[i].timestamp < cutoffTime) {
-                    this.requests.splice(i, 1);
-                }
-            }
-
-            if (this.requests.length !== originalLength) {
-                this.logger.debug(`Cleaned up ${originalLength - this.requests.length} old request records`);
-            }
-        }, this.config.monitoringPeriod);
     }
 }

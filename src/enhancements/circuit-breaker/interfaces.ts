@@ -12,13 +12,6 @@ export interface CircuitBreakerState {
     lastFailureTime?: Date;
 }
 
-export interface CircuitBreaker {
-    execute: <T>(operation: () => Promise<T>) => Promise<T>;
-    getState: () => CircuitBreakerState;
-    reset: () => void;
-    getMetrics?: () => CircuitBreakerMetrics;
-}
-
 export interface CircuitBreakerMetrics {
     totalRequests: number;
     successfulRequests: number;

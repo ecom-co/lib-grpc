@@ -1,356 +1,450 @@
-# @ecom-co/grpc
+# # @ecom-co/grpc
 
-A comprehensive gRPC library for the e-commerce platform, providing standardized error handling, validation, service management, and enterprise-scale features for gRPC services.
+🚀 **Modern gRPC Library** for NestJS with modular architecture, full observability, and production-ready features.
 
-## Features
+## ✨ Key Features
 
-### Core Features
-- **Comprehensive Error Handling**: Pre-built exceptions for all gRPC status codes
-- **Advanced Exception Filter**: High-performance error filtering with logging, metrics, and rate limiting
-- **Validation Pipeline**: Built-in validation pipe for request data validation
-- **Service Management**: Dynamic service registry and configuration management
-- **Configurable Module**: Support for both sync and async configuration
-- **Type-Safe Constants**: Strongly-typed gRPC status codes and error mappings
-- **Performance Optimized**: Caching, async logging, and memory management
-- **Utilities**: Helper functions for service configuration and port management
+### 🎯 **Core Modules**
+- **GrpcModule**: Auto-bootstrap gRPC services on app startup
+- **ServiceRegistry**: Dynamic service configuration management  
+- **GrpcBootstrapper**: Lifecycle management with graceful shutdown
 
-### 🚀 Scale Features (NEW!)
-- **Service Discovery**: Dynamic service registration and discovery (Memory, Consul, etcd)
-- **Circuit Breaker**: Fault tolerance and resilience patterns
-- **Health Checks**: Automated service health monitoring
-- **Distributed Tracing**: Request tracing across services with Jaeger integration
-- **Clustering**: Multi-node coordination and leader election
+### 🎨 **Smart ## 🔄 Migration Guide
 
-> 📖 For detailed scale features documentation, see [SCALE_FEATURES.md](./SCALE_FEATURES.md)
+From old architecture:
 
-## Installation
+```typescript
+// OLD: Manual service setup
+const userService = app.connectMicroservice({
+  transport: Transport.GRPC,
+  options: { /* config */ }
+});
+await app.startAllMicroservices();
 
-```bash
+// NEW: Auto bootstrap
+@Module({
+  imports: [GrpcModule.forRoot({ services: [...] })]
+})
+export class AppModule {} // Services auto-start!
+```@TraceOperation**: UUID tracing with structured logging
+- **@MonitorPerformance**: Real-time performance monitoring + memory tracking
+- **@Cacheable**: TTL-based method result caching
+- **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
+
+### 🔧 **Production Enhancements**
+- **Circuit Breaker**: Fault tolerance with auto-recovery
+- **Distributed Tracing**: Cross-service request tracing with span management
+- **Exception Handling**: gRPC-specific error handling + filters
+- **Validation**: Type-safe request validation pipesModern gRPC Library** cho NestJS với architecture modular, observability đầy đủ và production-ready features.
+
+## ✨ Feature
+
+### 🎯 **Core Modules**
+- **GrpcModule**: Auto-bootstrap gRPC services khi app startup
+- **ServiceRegistry**: Quản lý dynamic service configuration  
+- **GrpcBootstrapper**: Lifecycle management với graceful shutdown
+
+### 🎨 **Smart Decorators** 
+- **@TraceOperation**: UUID tracing với structured logging
+- **@MonitorPerformance**: Real-time performance monitoring + memory tracking
+- **@Cacheable**: TTL-based method result caching
+- **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
+
+### � **Production Enhancements**
+- **Circuit Breaker**: Fault tolerance với auto-recovery
+- **Distributed Tracing**: Cross-service request tracing với span management
+- **Exception Handling**: gRPC-specific error handling + filters
+- **Validation**: Type-safe request validation pipes
+
+## 📦 Installation
+
+\`\`\`bash
 npm install @ecom-co/grpc
-```
+\`\`\`
 
-## Dependencies
-
-This package requires the following peer dependencies:
+### Dependencies
 - `@nestjs/common` >= 10.0.0
 - `@nestjs/core` >= 10.0.0  
 - `@nestjs/microservices` >= 10.0.0
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Basic Module Setup
+### 1. **App Module Setup**
 
-```typescript
+\`\`\`typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { GrpcModule, GrpcServiceConfig } from '@ecom-co/grpc';
-
-const services: GrpcServiceConfig[] = [
-  {
-    name: 'User Service',
-    package: 'user',
-    protoPath: 'src/proto/user.proto',
-    port: 50052,
-    enabled: true,
-  },
-];
+import { GrpcModule } from '@ecom-co/grpc';
 
 @Module({
   imports: [
     GrpcModule.forRoot({
-      services,
-      basePath: process.cwd(),
-    }),
-  ],
+      services: [
+        {
+          name: 'user',
+          package: 'user.v1',
+          protoPath: './proto/user.proto'
+        },
+        {
+          name: 'order', 
+          package: 'order.v1',
+          protoPath: './proto/order.proto'
+        }
+      ]
+    })
+  ]
 })
 export class AppModule {}
+\`\`\`
+
+### 2. **Main.ts Bootstrap**
+
+\`\`\`typescript
+// main.ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
+  
+  await app.listen(3000);
+  console.log('🚀 HTTP Server: http://localhost:3000');
+  console.log('🔌 gRPC services auto-started by GrpcBootstrapper');
+}
+
+bootstrap();
+\`\`\`
+
+**Expected output:**
+\`\`\`
+**Expected output:**
+```
+🚀 Starting gRPC services bootstrap...
+🟢 Service 'user' started at localhost:50051
+🟢 Service 'order' started at localhost:50052
+✅ Successfully bootstrapped 2 gRPC services
+🚀 HTTP Server: http://localhost:3000
 ```
 
-### 2. Using Service Manager
+### 3. **Service Implementation with Decorators**
+\`\`\`
 
-```typescript
+### 3. **Service Implementation với Decorators**
+
+\`\`\`typescript
 // user.service.ts
 import { Injectable } from '@nestjs/common';
-import { ServiceManager } from '@ecom-co/grpc';
+import { 
+  TraceOperation, 
+  MonitorPerformance, 
+  Cacheable,
+  EnhancedOperation 
+} from '@ecom-co/grpc';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly serviceManager: ServiceManager) {}
+  
+  // Tracing only with UUID
+  @TraceOperation({ 
+    operationName: 'getUserById',
+    includeArgs: true,
+    includeResult: false 
+  })
+  async getUserById(id: string) {
+    // Logic here
+    return user;
+  }
 
-  async createMicroservices() {
-    const options = this.serviceManager.getAllMicroserviceOptions();
-    // Use options to create NestJS microservices
+  // Performance monitoring
+  @MonitorPerformance({ 
+    threshold: 1000, // warn if > 1s
+    includeMemory: true 
+  })
+  async updateUser(id: string, data: UpdateUserDto) {
+    // Logic here
+    return updatedUser;
+  }
+
+  // Method result caching  
+  @Cacheable({ 
+    ttl: 300, // 5 minutes
+    key: 'user-list' 
+  })
+  async getAllUsers() {
+    // Expensive operation
+    return users;
+  }
+
+  // All-in-one decorator
+  @EnhancedOperation({
+    operationName: 'createUser',
+    cacheEnabled: true,
+    cacheTtl: 600,
+    performanceThreshold: 2000,
+    includeArgs: true
+  })
+  async createUser(userData: CreateUserDto) {
+    // Auto: tracing + performance + caching
+    return newUser;
   }
 }
-```
+\`\`\`
 
-### 3. Using GrpcBootstrapper (Recommended)
+## 🔧 Advanced Features
 
-```typescript
-// main.ts
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { GrpcBootstrapper, ServiceManager } from '@ecom-co/grpc';
-import { AppModule } from './app.module';
+### **Circuit Breaker Protection**
 
-const bootstrap = async () => {
-  const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Bootstrap');
-  const serviceManager = app.get(ServiceManager);
-
-  // Replace manual service startup with bootstrapper
-  await GrpcBootstrapper.bootstrap(app, serviceManager, {
-    appModule: AppModule,
-    logger,
-    logEnvironment: true,
-    getEnvironment: () => process.env.NODE_ENV || 'development',
-    maxConcurrency: 3,
-  });
-};
-
-bootstrap();
-```
-
-## Service Management
-
-### Dynamic Configuration
-
-The library supports dynamic service management:
-
-```typescript
-// Add new service
-serviceManager.addService({
-  name: 'Payment Service',
-  package: 'payment',
-  protoPath: 'src/proto/payment.proto',
-  port: 50054,
-  enabled: true,
-});
-
-// Enable/disable services
-serviceManager.enableService('Payment Service');
-serviceManager.disableService('Payment Service');
-
-// Get services
-const enabledServices = serviceManager.getEnabledServices();
-const allServices = serviceManager.getAllServices();
-```
-
-### Async Configuration
-
-```typescript
+\`\`\`typescript
 // app.module.ts
+import { CircuitBreakerModule } from '@ecom-co/grpc';
+
 @Module({
   imports: [
-    GrpcModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        services: [
-          {
-            name: 'User Service',
-            package: 'user',
-            protoPath: configService.get('USER_PROTO_PATH'),
-            port: configService.get('USER_SERVICE_PORT'),
-            enabled: configService.get('USER_SERVICE_ENABLED'),
-          },
-        ],
-        basePath: configService.get('PROTO_BASE_PATH'),
-      }),
-      inject: [ConfigService],
-    }),
-  ],
+    CircuitBreakerModule.forRoot({
+      failureThreshold: 5,    // Open after 5 failures
+      recoveryTimeout: 30000, // Try recovery after 30s
+      monitoringPeriod: 10000 // Monitor every 10s
+    })
+  ]
 })
 export class AppModule {}
-```
 
-### Constants
+// service.ts - Auto protection
+@Injectable()
+export class ExternalApiService {
+  constructor(private circuitBreaker: CircuitBreakerService) {}
 
-```typescript
-import { GRPC_STATUS_CODES, GRPC_STATUS_NAMES } from '@ecom-co/grpc';
+  async callExternalApi(data: any) {
+    return this.circuitBreaker.execute(
+      'external-api',
+      () => this.httpService.post('/api/endpoint', data).toPromise()
+    );
+  }
+}
+\`\`\`
 
-// Use status codes
-const notFoundCode = GRPC_STATUS_CODES.NOT_FOUND; // 5
-const statusName = GRPC_STATUS_NAMES[notFoundCode]; // 'NOT_FOUND'
-```
+### **Distributed Tracing**
 
-### Exceptions
+\`\`\`typescript
+// app.module.ts
+import { TracingModule } from '@ecom-co/grpc';
 
-```typescript
+@Module({
+  imports: [
+    TracingModule.forRoot({
+      serviceName: 'user-service',
+      enableSampling: true,
+      samplingRate: 0.1, // 10% sampling
+      maxSpans: 10000
+    })
+  ]
+})
+export class AppModule {}
+
+// service.ts - Manual tracing
+@Injectable() 
+export class UserService {
+  constructor(private tracer: DistributedTracer) {}
+
+  async complexOperation(userId: string) {
+    const span = this.tracer.startSpan('complex-operation', null, {
+      'user.id': userId,
+      'operation.type': 'business-logic'
+    });
+
+    try {
+      // Step 1
+      this.tracer.addLog(span.spanId, 'info', 'Starting database lookup');
+      const user = await this.findUser(userId);
+      
+      // Step 2  
+      this.tracer.addTags(span.spanId, { 'user.found': !!user });
+      const result = await this.processUser(user);
+      
+      this.tracer.finishSpan(span.spanId, 'completed');
+      return result;
+      
+    } catch (error) {
+      this.tracer.addLog(span.spanId, 'error', error.message);
+      this.tracer.finishSpan(span.spanId, 'failed');
+      throw error;
+    }
+  }
+}
+\`\`\`
+
+### **Exception Handling**
+
+\`\`\`typescript
 import { 
   GrpcNotFoundException,
   GrpcInvalidArgumentException,
-  GrpcValidationException 
+  GrpcValidationException,
+  GrpcExceptionFilter
 } from '@ecom-co/grpc';
 
-// Throw specific gRPC exceptions
-throw new GrpcNotFoundException('User not found');
-throw new GrpcInvalidArgumentException('Invalid user ID format');
+// Custom exceptions
+@Injectable()
+export class UserService {
+  async getUserById(id: string) {
+    if (!id) {
+      throw new GrpcInvalidArgumentException('User ID is required');
+    }
+    
+    const user = await this.userRepo.findOne(id);
+    if (!user) {
+      throw new GrpcNotFoundException(\`User with ID \${id} not found\`);
+    }
+    
+    return user;
+  }
 
-// Validation exception with detailed field errors
-throw new GrpcValidationException(
-  ['Name is required', 'Email must be valid'],
-  { name: { required: 'Name is required' }, email: { email: 'Email must be valid' } }
-);
-```
+  async createUser(dto: CreateUserDto) {
+    // Validation errors
+    const errors = await validate(dto);
+    if (errors.length > 0) {
+      throw new GrpcValidationException(
+        errors.map(e => Object.values(e.constraints).join(', ')),
+        { fieldErrors: errors }
+      );
+    }
+  }
+}
 
-### Exception Filter
-
-```typescript
-import { GrpcExceptionFilter, GrpcExceptionFilterOptions } from '@ecom-co/grpc';
-
-// Basic usage
+// Global exception filter
 @UseFilters(new GrpcExceptionFilter())
 @Controller()
-export class UserService {
-  // Your gRPC service methods
+export class UserController {
+  // All methods protected
 }
+\`\`\`
 
-// Advanced configuration
-const filterOptions: GrpcExceptionFilterOptions = {
-  isDevelopment: false,
-  enableLogging: true,
-  enableMetrics: true,
-  customErrorMessages: {
-    [GRPC_STATUS_CODES.NOT_FOUND]: 'Resource could not be located'
-  },
-  maxDetailsSize: 2000,
-  errorRateLimit: 5,
-  rateLimitWindowMs: 30000
-};
+## 📊 Observability & Monitoring
 
-@UseFilters(new GrpcExceptionFilter(filterOptions, errorMetrics))
-export class UserService {}
-```
+### **Performance Metrics**
 
-### Validation Pipe
+\`\`\`typescript
+### **Performance Metrics**
 
 ```typescript
-import { GrpcValidationPipe } from '@ecom-co/grpc';
+// Decorator automatically tracks:
+// - Execution time (ms)
+// - Memory usage delta  
+// - Success/failure rates
+// - Cache hit/miss rates
 
-@GrpcMethod('UserService', 'CreateUser')
-async createUser(
-  @Body(new GrpcValidationPipe()) createUserDto: CreateUserDto
-): Promise<User> {
-  // Your implementation
+@MonitorPerformance({ threshold: 500 })
+async heavyOperation() {
+  // Output when > threshold:
+  // ⚠️ Slow operation: heavyOperation took 1200.45ms
+  // {
+  //   method: 'heavyOperation',
+  //   duration: '1200.45ms', 
+  //   memory: { heapDelta: 1024000, ... }
+  // }
 }
 ```
 
-## Available Exceptions
-
-- `GrpcNotFoundException` (NOT_FOUND - 5)
-- `GrpcInvalidArgumentException` (INVALID_ARGUMENT - 3) 
-- `GrpcUnauthenticatedException` (UNAUTHENTICATED - 16)
-- `GrpcPermissionDeniedException` (PERMISSION_DENIED - 7)
-- `GrpcAlreadyExistsException` (ALREADY_EXISTS - 6)
-- `GrpcResourceExhaustedException` (RESOURCE_EXHAUSTED - 8)
-- `GrpcFailedPreconditionException` (FAILED_PRECONDITION - 9)
-- `GrpcAbortedException` (ABORTED - 10)
-- `GrpcOutOfRangeException` (OUT_OF_RANGE - 11)
-- `GrpcUnimplementedException` (UNIMPLEMENTED - 12)
-- `GrpcInternalException` (INTERNAL - 13)
-- `GrpcUnavailableException` (UNAVAILABLE - 14)
-- `GrpcDataLossException` (DATA_LOSS - 15)
-- `GrpcValidationException` (INVALID_ARGUMENT - 3 with validation details)
-
-## Performance Features
-
-### Exception Filter Performance
-- **Error Code Caching**: Frequently used error codes are cached for faster lookups
-- **Async Logging**: Non-blocking log processing with queue management
-- **Rate Limiting**: Prevents log spam with configurable rate limits
-- **Memory Management**: Automatic cleanup and size limits for error details
-- **Metrics Integration**: Optional metrics recording for monitoring
-
-### Configuration Options
-- `isDevelopment`: Include stack traces and verbose debugging
-- `enableLogging`: Toggle error logging 
-- `enableMetrics`: Enable metrics collection
-- `customErrorMessages`: Override default error messages
-- `maxDetailsSize`: Limit error detail size to prevent memory issues
-- `errorRateLimit`: Maximum errors to log per time window
-- `rateLimitWindowMs`: Time window for rate limiting
-
-## Enhanced Features Quick Start
+### **Request Tracing**
 
 ```typescript
-// Enhanced module with scale features
-import { GrpcModule, GrpcModuleOptions } from '@ecom-co/grpc';
+// Each request has unique trace ID:
+// 🟢 [abc-123-def] Starting getUserById
+// 📝 [abc-123-def] Database query executed  
+// ✅ [abc-123-def] Completed getUserById in 45ms
 
-const config: GrpcModuleOptions = {
-  services: [
-    {
-      name: 'User Service',
-      package: 'user',
-      protoPath: 'src/proto/user.proto',
-      port: 50052,
-      enabled: true,
-    },
-  ],
-  basePath: process.cwd(),
-  
-  // Scale features
-  serviceDiscovery: { provider: 'memory' },
-  circuitBreaker: { failureThreshold: 3, recoveryTimeout: 10000 },
-  healthCheck: { interval: 30000, timeout: 5000, retries: 3 },
-  tracing: { serviceName: 'user-service', samplingRate: 0.1 },
-  cluster: { nodeId: 'user-service-1', nodes: [], leaderElection: true }
-};
-
-@Module({
-  imports: [GrpcModule.forRoot(config)],
+@TraceOperation({ 
+  includeArgs: true,
+  includeResult: true 
 })
-export class AppModule {}
-```
+async getUserById(id: string) {
+  // Auto logging with structured data
+}
+\`\`\`
 
-## Development
+### **Request Tracing**
 
-```bash
-# Install dependencies
-npm install
+\`\`\`typescript
+// Mỗi request có unique trace ID:
+// 🟢 [abc-123-def] Starting getUserById
+// 📝 [abc-123-def] Database query executed  
+// ✅ [abc-123-def] Completed getUserById in 45ms
 
-# Build the library
-npm run build
+@TraceOperation({ 
+  includeArgs: true,
+  includeResult: true 
+})
+async getUserById(id: string) {
+  // Auto logging với structured data
+}
+\`\`\`
 
-# Run linter
-npm run lint
+## 🏗️ Architecture
 
-# Run linter with auto-fix
-npm run lint:fix
+\`\`\`
+@ecom-co/grpc/
+├── modules/           # Core gRPC functionality
+│   ├── grpc.module.ts        # Main module  
+│   ├── grpc.service.ts       # Core service
+│   ├── service-registry.ts   # Dynamic config
+│   └── grpc-bootstrapper.ts  # Auto startup
+├── decorators/        # Smart decorators
+│   ├── trace-operation.decorator.ts
+│   ├── monitor-performance.decorator.ts
+│   ├── cacheable.decorator.ts
+│   └── enhanced-operation.decorator.ts
+├── enhancements/      # Production features
+│   ├── circuit-breaker/
+│   └── tracing/
+├── exceptions/        # Error handling
+├── filters/          # Exception filters
+├── pipes/            # Validation pipes
+└── constants/        # Shared constants
+\`\`\`
 
-# Clean build artifacts  
-npm run clean
-```
+## 🔄 Migration Guide
 
-## Publishing
+Từ old architecture:
 
-```bash
-# Patch version
-npm run release:patch
+\`\`\`typescript
+// OLD: Manual service setup
+const userService = app.connectMicroservice({
+  transport: Transport.GRPC,
+  options: { /* config */ }
+});
+await app.startAllMicroservices();
 
-# Minor version
-npm run release:minor
+// NEW: Auto bootstrap
+@Module({
+  imports: [GrpcModule.forRoot({ services: [...] })]
+})
+export class AppModule {} // Services tự động start!
+\`\`\`
 
-# Major version  
-npm run release:major
-```
+## 📈 Production Tips
 
-## Migration from @ecom-co/utils
+1. **Sampling**: Set `samplingRate: 0.1` for high-traffic services
+2. **Cache TTL**: Adjust based on data freshness requirements  
+3. **Circuit Breaker**: Tune thresholds according to service SLAs
+4. **Performance**: Monitor memory usage in `@MonitorPerformance`
+5. **Graceful Shutdown**: Always enable `app.enableShutdownHooks()`
 
-If you're migrating from the utils library, update your imports:
+## 📝 Development
 
-```typescript
-// Old imports from @ecom-co/utils
-import { GRPC_STATUS_CODES, GrpcExceptionFilter } from '@ecom-co/utils';
+\`\`\`bash
+# Build
+pnpm build
 
-// New imports from @ecom-co/grpc
-import { GRPC_STATUS_CODES, GrpcExceptionFilter } from '@ecom-co/grpc';
-```
+# Lint & fix
+pnpm lint:fix
 
-All functionality remains the same - only the package name has changed.
+# Test
+pnpm test
+\`\`\`
 
-## License
+## 📄 License
 
-ISC
-
-## Author
-
-Nam077
+ISC - ecom-co
