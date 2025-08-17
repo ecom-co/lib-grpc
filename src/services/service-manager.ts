@@ -164,7 +164,8 @@ export class ServiceManager {
 
             // Execute with circuit breaker if available
             if (this.circuitBreaker) {
-                result = await this.circuitBreaker.execute<T>(operation);
+                // Type assertion is safe here because circuit breaker maintains generic type T
+                result = (await this.circuitBreaker.execute<T>(operation)) as T;
             } else {
                 result = await operation();
             }
