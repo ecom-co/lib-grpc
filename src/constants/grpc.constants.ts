@@ -1,0 +1,84 @@
+/**
+ * gRPC Status Codes
+ * Reference: https://grpc.github.io/grpc/core/md_doc_statuscodes.html
+ */
+export const GRPC_STATUS_CODES = {
+    // Success
+    OK: 0,
+
+    // Client errors
+    CANCELLED: 1,
+    UNKNOWN: 2,
+    INVALID_ARGUMENT: 3,
+    DEADLINE_EXCEEDED: 4,
+    NOT_FOUND: 5,
+    ALREADY_EXISTS: 6,
+    PERMISSION_DENIED: 7,
+    RESOURCE_EXHAUSTED: 8,
+    FAILED_PRECONDITION: 9,
+    ABORTED: 10,
+    OUT_OF_RANGE: 11,
+    UNIMPLEMENTED: 12,
+    INTERNAL: 13,
+    UNAVAILABLE: 14,
+    DATA_LOSS: 15,
+    UNAUTHENTICATED: 16,
+} as const;
+
+/**
+ * Error name to gRPC code mapping
+ */
+export const ERROR_NAME_TO_GRPC_CODE: Record<string, number> = {
+    validationerror: GRPC_STATUS_CODES.INVALID_ARGUMENT,
+    unauthorizederror: GRPC_STATUS_CODES.UNAUTHENTICATED,
+    forbiddenerror: GRPC_STATUS_CODES.PERMISSION_DENIED,
+    notfounderror: GRPC_STATUS_CODES.NOT_FOUND,
+    conflicterror: GRPC_STATUS_CODES.ALREADY_EXISTS,
+    timeouterror: GRPC_STATUS_CODES.UNAVAILABLE,
+    rangeerror: GRPC_STATUS_CODES.OUT_OF_RANGE,
+    typeerror: GRPC_STATUS_CODES.INVALID_ARGUMENT,
+    referenceerror: GRPC_STATUS_CODES.INVALID_ARGUMENT,
+    syntaxerror: GRPC_STATUS_CODES.INVALID_ARGUMENT,
+} as const;
+
+/**
+ * gRPC Status Code Names
+ */
+export const GRPC_STATUS_NAMES: Record<number, string> = {
+    [GRPC_STATUS_CODES.OK]: 'OK',
+    [GRPC_STATUS_CODES.CANCELLED]: 'CANCELLED',
+    [GRPC_STATUS_CODES.UNKNOWN]: 'UNKNOWN',
+    [GRPC_STATUS_CODES.INVALID_ARGUMENT]: 'INVALID_ARGUMENT',
+    [GRPC_STATUS_CODES.DEADLINE_EXCEEDED]: 'DEADLINE_EXCEEDED',
+    [GRPC_STATUS_CODES.NOT_FOUND]: 'NOT_FOUND',
+    [GRPC_STATUS_CODES.ALREADY_EXISTS]: 'ALREADY_EXISTS',
+    [GRPC_STATUS_CODES.PERMISSION_DENIED]: 'PERMISSION_DENIED',
+    [GRPC_STATUS_CODES.RESOURCE_EXHAUSTED]: 'RESOURCE_EXHAUSTED',
+    [GRPC_STATUS_CODES.FAILED_PRECONDITION]: 'FAILED_PRECONDITION',
+    [GRPC_STATUS_CODES.ABORTED]: 'ABORTED',
+    [GRPC_STATUS_CODES.OUT_OF_RANGE]: 'OUT_OF_RANGE',
+    [GRPC_STATUS_CODES.UNIMPLEMENTED]: 'UNIMPLEMENTED',
+    [GRPC_STATUS_CODES.INTERNAL]: 'INTERNAL',
+    [GRPC_STATUS_CODES.UNAVAILABLE]: 'UNAVAILABLE',
+    [GRPC_STATUS_CODES.DATA_LOSS]: 'DATA_LOSS',
+    [GRPC_STATUS_CODES.UNAUTHENTICATED]: 'UNAUTHENTICATED',
+} as const;
+
+/**
+ * Default error messages for each status code
+ */
+export const DEFAULT_ERROR_MESSAGES: Record<number, string> = {
+    [GRPC_STATUS_CODES.INVALID_ARGUMENT]: 'Invalid argument',
+    [GRPC_STATUS_CODES.NOT_FOUND]: 'Resource not found',
+    [GRPC_STATUS_CODES.ALREADY_EXISTS]: 'Resource already exists',
+    [GRPC_STATUS_CODES.PERMISSION_DENIED]: 'Permission denied',
+    [GRPC_STATUS_CODES.RESOURCE_EXHAUSTED]: 'Resource exhausted',
+    [GRPC_STATUS_CODES.FAILED_PRECONDITION]: 'Failed precondition',
+    [GRPC_STATUS_CODES.ABORTED]: 'Operation aborted',
+    [GRPC_STATUS_CODES.OUT_OF_RANGE]: 'Out of range',
+    [GRPC_STATUS_CODES.UNIMPLEMENTED]: 'Method not implemented',
+    [GRPC_STATUS_CODES.INTERNAL]: 'Internal server error',
+    [GRPC_STATUS_CODES.UNAVAILABLE]: 'Service unavailable',
+    [GRPC_STATUS_CODES.DATA_LOSS]: 'Data loss',
+    [GRPC_STATUS_CODES.UNAUTHENTICATED]: 'Unauthenticated',
+} as const;
