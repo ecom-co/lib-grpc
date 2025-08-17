@@ -9,7 +9,9 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
     private readonly runningServices = new Map<string, { server: unknown; port: number }>();
     private basePort = 50051;
 
-    constructor(private readonly serviceRegistry: ServiceRegistry) {}
+    constructor(private readonly serviceRegistry: ServiceRegistry) {
+        this.logger.log('🔧 GrpcBootstrapper constructor called');
+    }
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('🚀 Starting gRPC services bootstrap...');
@@ -83,8 +85,8 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
     }
 
     private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<unknown> {
-        // TODO: Replace with actual gRPC server implementation
-        // This is a placeholder for the real gRPC server creation
+        // TODO: Replace with actual gRPC server implementation using NestJS microservices
+        // For now, using enhanced mock implementation
 
         this.logger.debug(`🔧 Creating gRPC server for ${config.name}...`);
         this.logger.debug(`   Host: ${host}`);
@@ -92,31 +94,37 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
         this.logger.debug(`   Proto: ${config.protoPath}`);
         this.logger.debug(`   Package: ${config.package}`);
 
-        // Simulate async server creation
+        // Enhanced mock implementation with better server simulation
         return new Promise((resolve) => {
             setTimeout(() => {
-                resolve({
+                const mockServer = {
                     name: config.name,
                     host,
                     port,
                     status: 'running',
-                    // Mock server object
-                });
+                    package: config.package,
+                    protoPath: config.protoPath,
+                    startTime: new Date(),
+                    // Simulate server methods
+                    stop: async () => {
+                        this.logger.debug(`🔴 Stopping gRPC server for ${config.name}...`);
+                        return Promise.resolve();
+                    },
+                };
+
+                this.logger.debug(`✅ Mock gRPC server created for ${config.name}`);
+                resolve(mockServer);
             }, 100);
         });
     }
 
-    private async shutdownGrpcServer(_server: unknown): Promise<void> {
-        // TODO: Replace with actual gRPC server shutdown
-        this.logger.debug('🔧 Shutting down gRPC server...');
+    private async shutdownGrpcServer(server: unknown): Promise<void> {
+        // Call the server's stop method if available
+        if (server && typeof server === 'object' && 'stop' in server && typeof server.stop === 'function') {
+            await (server as { stop: () => Promise<void> }).stop();
+        }
 
-        // Simulate graceful shutdown
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                this.logger.debug('✅ gRPC server shutdown complete');
-                resolve();
-            }, 50);
-        });
+        this.logger.debug('✅ gRPC server shutdown complete');
     }
 
     private getNextAvailablePort(): number {
