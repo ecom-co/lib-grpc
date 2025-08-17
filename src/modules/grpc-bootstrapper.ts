@@ -1,4 +1,8 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+
+import { join } from 'path';
 
 import { ServiceConfig } from './interfaces';
 import { ServiceRegistry } from './service-registry';
@@ -6,11 +10,19 @@ import { ServiceRegistry } from './service-registry';
 @Injectable()
 export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationShutdown {
     private readonly logger = new Logger(GrpcBootstrapper.name);
-    private readonly runningServices = new Map<string, { server: unknown; port: number }>();
+    private readonly runningServices = new Map<string, { server: any; port: number }>();
     private basePort = 50051;
-
+    private appModule: any;
     constructor(private readonly serviceRegistry: ServiceRegistry) {
         this.logger.log('🔧 GrpcBootstrapper constructor called');
+    }
+
+    /**
+     * Set the app module for creating microservices
+     */
+    setAppModule(appModule: any): void {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        this.appModule = appModule;
     }
 
     async onApplicationBootstrap(): Promise<void> {
@@ -51,9 +63,10 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
         const host = config.host || 'localhost';
 
         try {
-            // Simulate gRPC server creation (replace with actual gRPC implementation)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const server = await this.createGrpcServer(config, host, port);
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             this.runningServices.set(config.name, { server, port });
 
             this.logger.log(`🟢 Service '${config.name}' started at ${host}:${port}`);
@@ -73,7 +86,6 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
         }
 
         try {
-            // Simulate graceful shutdown (replace with actual gRPC implementation)
             await this.shutdownGrpcServer(serviceInfo.server);
             this.runningServices.delete(serviceName);
 
@@ -84,44 +96,74 @@ export class GrpcBootstrapper implements OnApplicationBootstrap, OnApplicationSh
         }
     }
 
-    private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<unknown> {
-        // TODO: Replace with actual gRPC server implementation using NestJS microservices
-        // For now, using enhanced mock implementation
-
+    /**
+     * Start a single gRPC service using NestFactory.createMicroservice
+     */
+    private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<any> {
         this.logger.debug(`🔧 Creating gRPC server for ${config.name}...`);
         this.logger.debug(`   Host: ${host}`);
         this.logger.debug(`   Port: ${port}`);
         this.logger.debug(`   Proto: ${config.protoPath}`);
         this.logger.debug(`   Package: ${config.package}`);
 
-        // Enhanced mock implementation with better server simulation
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const mockServer = {
-                    name: config.name,
-                    host,
-                    port,
-                    status: 'running',
-                    package: config.package,
-                    protoPath: config.protoPath,
-                    startTime: new Date(),
-                    // Simulate server methods
-                    stop: async () => {
-                        this.logger.debug(`🔴 Stopping gRPC server for ${config.name}...`);
-                        return Promise.resolve();
-                    },
-                };
+        if (!this.appModule) {
+            throw new Error('App module is required to create gRPC services');
+        }
 
-                this.logger.debug(`✅ Mock gRPC server created for ${config.name}`);
-                resolve(mockServer);
-            }, 100);
-        });
+        // Get microservice options for this service
+        const microserviceOptions = this.getMicroserviceOptions(config, host, port);
+
+        // Create real gRPC microservice using NestFactory
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        const grpcApp = await NestFactory.createMicroservice(this.appModule, microserviceOptions as any);
+
+        // Start listening on the specified port
+        await grpcApp.listen();
+
+        this.logger.log(`✅ gRPC server created for ${config.name} at ${host}:${port}`);
+
+        return {
+            name: config.name,
+            host,
+            port,
+            status: 'running',
+            package: config.package,
+            protoPath: config.protoPath,
+            startTime: new Date(),
+            grpcApp, // Store the actual NestJS microservice instance
+            stop: async () => {
+                this.logger.debug(`🔴 Stopping gRPC server for ${config.name}...`);
+                await grpcApp.close();
+            },
+        };
     }
 
-    private async shutdownGrpcServer(server: unknown): Promise<void> {
-        // Call the server's stop method if available
+    /**
+     * Get microservice options for gRPC transport
+     */
+    private getMicroserviceOptions(config: ServiceConfig, host: string, port: number): MicroserviceOptions {
+        return {
+            transport: Transport.GRPC,
+            options: {
+                package: config.package,
+                protoPath: join(process.cwd(), config.protoPath),
+                url: `${host}:${port}`,
+                loader: {
+                    keepCase: true,
+                    longs: String,
+                    enums: String,
+                    defaults: true,
+                    oneofs: true,
+                },
+            },
+        };
+    }
+
+    private async shutdownGrpcServer(server: any): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (server && typeof server === 'object' && 'stop' in server && typeof server.stop === 'function') {
-            await (server as { stop: () => Promise<void> }).stop();
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            await server.stop();
         }
 
         this.logger.debug('✅ gRPC server shutdown complete');
