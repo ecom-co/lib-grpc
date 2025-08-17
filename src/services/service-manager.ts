@@ -144,7 +144,18 @@ export class ServiceManager {
     /**
      * Enhanced service execution with circuit breaker and tracing
      */
-    async executeWithEnhancements<T>(
+    executeWithEnhancements<T>(
+        operation: () => Promise<T>,
+        operationName: string,
+        parentSpan?: TracingSpan,
+    ): Promise<T> {
+        return this._executeWithEnhancementsInternal(operation, operationName, parentSpan);
+    }
+
+    /**
+     * Internal implementation with proper typing
+     */
+    private async _executeWithEnhancementsInternal<T>(
         operation: () => Promise<T>,
         operationName: string,
         parentSpan?: TracingSpan,
