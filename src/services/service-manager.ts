@@ -144,18 +144,7 @@ export class ServiceManager {
     /**
      * Enhanced service execution with circuit breaker and tracing
      */
-    executeWithEnhancements<T>(
-        operation: () => Promise<T>,
-        operationName: string,
-        parentSpan?: TracingSpan,
-    ): Promise<T> {
-        return this._executeWithEnhancementsInternal(operation, operationName, parentSpan);
-    }
-
-    /**
-     * Internal implementation with proper typing
-     */
-    private async _executeWithEnhancementsInternal<T>(
+    async executeWithEnhancements<T>(
         operation: () => Promise<T>,
         operationName: string,
         parentSpan?: TracingSpan,
@@ -208,6 +197,18 @@ export class ServiceManager {
     }
 
     /**
+     * Get service instances from service discovery
+     */
+    async discoverServices(serviceName: string): Promise<ServiceInstance[]> {
+        if (!this.serviceDiscovery) {
+            this.logger.warn('Service discovery not available');
+            return [];
+        }
+
+        return this.serviceDiscovery.discover(serviceName);
+    }
+
+    /**
      * Start health monitoring for all services
      */
     startHealthMonitoring(config: HealthCheckConfig): void {
@@ -240,18 +241,6 @@ export class ServiceManager {
             this.healthChecker.stopMonitoring(serviceId);
         }
         this.logger.log('Stopped health monitoring for all services');
-    }
-
-    /**
-     * Get service instances from service discovery
-     */
-    async discoverServices(serviceName: string): Promise<ServiceInstance[]> {
-        if (!this.serviceDiscovery) {
-            this.logger.warn('Service discovery not available');
-            return [];
-        }
-
-        return this.serviceDiscovery.discover(serviceName);
     }
 
     /**
