@@ -164,7 +164,7 @@ export class ServiceManager {
 
             // Execute with circuit breaker if available
             if (this.circuitBreaker) {
-                result = await this.circuitBreaker.execute(operation);
+                result = await this.circuitBreaker.execute<T>(operation);
             } else {
                 result = await operation();
             }
