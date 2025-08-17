@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { GrpcServiceManager } from './grpc-service-manager';
+import { ServiceConfig } from './interfaces';
 
 @Injectable()
 export class GrpcStarter {
@@ -34,7 +35,7 @@ export class GrpcStarter {
     /**
      * Delegate methods to service manager
      */
-    async addService(config: any): Promise<void> {
+    async addService(config: ServiceConfig): Promise<void> {
         await this.grpcServiceManager.addService(config);
     }
 

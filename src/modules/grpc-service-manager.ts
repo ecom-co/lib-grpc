@@ -15,7 +15,7 @@ export class GrpcServiceManager {
     private appModule: any;
 
     constructor(private readonly serviceRegistry: ServiceRegistry) {
-        this.logger.log('🔧 GrpcServiceManager initialized');
+        this.logger.log('GrpcServiceManager initialized');
     }
 
     /**
@@ -24,19 +24,19 @@ export class GrpcServiceManager {
     setAppModule(appModule: any): void {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         this.appModule = appModule;
-        this.logger.log('📦 App module set for gRPC service creation');
+        this.logger.log('App module set for gRPC service creation');
     }
 
     /**
      * Manually start all registered gRPC services
      */
     async startAllServices(): Promise<void> {
-        this.logger.log('🚀 Starting gRPC services...');
+        this.logger.log('Starting gRPC services...');
 
         const services = this.serviceRegistry.getAll();
 
         if (services.length === 0) {
-            this.logger.warn('⚠️ No gRPC services found to start');
+            this.logger.warn('No gRPC services found to start');
             return;
         }
 
@@ -44,7 +44,7 @@ export class GrpcServiceManager {
             await this.startService(service);
         }
 
-        this.logger.log(`✅ Successfully started ${services.length} gRPC services`);
+        this.logger.log(`Successfully started ${services.length} gRPC services`);
     }
 
     /**
@@ -56,14 +56,14 @@ export class GrpcServiceManager {
         const shutdownPromises = Array.from(this.runningServices.entries()).map(async ([serviceName]) => {
             try {
                 await this.stopService(serviceName);
-                this.logger.log(`✅ Service ${serviceName} stopped gracefully`);
+                this.logger.log(`Service ${serviceName} stopped gracefully`);
             } catch (error) {
-                this.logger.error(`❌ Failed to stop service ${serviceName}:`, error);
+                this.logger.error(`Failed to stop service ${serviceName}:`, error);
             }
         });
 
         await Promise.all(shutdownPromises);
-        this.logger.log('🔴 All gRPC services stopped');
+        this.logger.log('All gRPC services stopped');
     }
 
     private async startService(config: ServiceConfig): Promise<void> {
@@ -77,11 +77,11 @@ export class GrpcServiceManager {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             this.runningServices.set(config.name, { server, port });
 
-            this.logger.log(`🟢 Service '${config.name}' started at ${host}:${port}`);
-            this.logger.debug(`   📁 Proto: ${config.protoPath}`);
-            this.logger.debug(`   📦 Package: ${config.package}`);
+            this.logger.log(`Service '${config.name}' started at ${host}:${port}`);
+            this.logger.debug(`Proto: ${config.protoPath}`);
+            this.logger.debug(`Package: ${config.package}`);
         } catch (error) {
-            this.logger.error(`❌ Failed to start service '${config.name}':`, error);
+            this.logger.error(`Failed to start service '${config.name}':`, error);
             throw error;
         }
     }
@@ -89,7 +89,7 @@ export class GrpcServiceManager {
     private async stopService(serviceName: string): Promise<void> {
         const serviceInfo = this.runningServices.get(serviceName);
         if (!serviceInfo) {
-            this.logger.warn(`⚠️ Service '${serviceName}' not found in running services`);
+            this.logger.warn(`Service '${serviceName}' not found in running services`);
             return;
         }
 
@@ -97,9 +97,9 @@ export class GrpcServiceManager {
             await this.shutdownGrpcServer(serviceInfo.server);
             this.runningServices.delete(serviceName);
 
-            this.logger.log(`🔴 Service '${serviceName}' stopped`);
+            this.logger.log(`Service '${serviceName}' stopped`);
         } catch (error) {
-            this.logger.error(`❌ Error stopping service '${serviceName}':`, error);
+            this.logger.error(`Error stopping service '${serviceName}':`, error);
             throw error;
         }
     }
@@ -107,12 +107,15 @@ export class GrpcServiceManager {
     /**
      * Create a dedicated gRPC microservice for each service
      */
+    /**
+     * Start a single gRPC service using NestFactory.createMicroservice
+     */
     private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<any> {
-        this.logger.debug(`🔧 Creating gRPC server for ${config.name}...`);
-        this.logger.debug(`   Host: ${host}`);
-        this.logger.debug(`   Port: ${port}`);
-        this.logger.debug(`   Proto: ${config.protoPath}`);
-        this.logger.debug(`   Package: ${config.package}`);
+        this.logger.debug(`Creating gRPC server for ${config.name}...`);
+        this.logger.debug(`Host: ${host}`);
+        this.logger.debug(`Port: ${port}`);
+        this.logger.debug(`Proto: ${config.protoPath}`);
+        this.logger.debug(`Package: ${config.package}`);
 
         if (!this.appModule) {
             throw new Error('App module is required to create gRPC services');
@@ -128,7 +131,7 @@ export class GrpcServiceManager {
         // Start listening on the specified port
         await grpcApp.listen();
 
-        this.logger.log(`✅ gRPC server created for ${config.name} at ${host}:${port}`);
+        this.logger.log(`gRPC server created for ${config.name} at ${host}:${port}`);
 
         return {
             name: config.name,
@@ -140,7 +143,7 @@ export class GrpcServiceManager {
             startTime: new Date(),
             grpcApp, // Store the actual NestJS microservice instance
             stop: async () => {
-                this.logger.debug(`🔴 Stopping gRPC server for ${config.name}...`);
+                this.logger.debug(`Stopping gRPC server for ${config.name}...`);
                 await grpcApp.close();
             },
         };
@@ -174,7 +177,7 @@ export class GrpcServiceManager {
             await server.stop();
         }
 
-        this.logger.debug('✅ gRPC server shutdown complete');
+        this.logger.debug('gRPC server shutdown complete');
     }
 
     private getNextAvailablePort(): number {

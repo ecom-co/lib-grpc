@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { GrpcServiceManager } from './grpc-service-manager';
+import { ServiceConfig } from './interfaces';
 
 @Injectable()
 export class GrpcStarter {
     private readonly logger = new Logger(GrpcStarter.name);
 
     constructor(private readonly grpcServiceManager: GrpcServiceManager) {
-        this.logger.log('🔧 GrpcStarter constructor called');
+        this.logger.log('GrpcStarter initialized');
     }
 
     /**
@@ -32,20 +33,33 @@ export class GrpcStarter {
     }
 
     /**
-     * Delegate methods to service manager
+     * Add a new gRPC service dynamically
+     * @param config - Service configuration with proper typing
      */
-    async addService(config: any): Promise<void> {
+    async addService(config: ServiceConfig): Promise<void> {
         await this.grpcServiceManager.addService(config);
     }
 
+    /**
+     * Remove a gRPC service by name
+     * @param serviceName - Name of the service to remove
+     */
     async removeService(serviceName: string): Promise<void> {
         await this.grpcServiceManager.removeService(serviceName);
     }
 
+    /**
+     * Get list of running services
+     * @returns Array of service information
+     */
     getRunningServices(): Array<{ name: string; port: number; status: string }> {
         return this.grpcServiceManager.getRunningServices();
     }
 
+    /**
+     * Check if a service is currently running
+     * @param serviceName - Name of the service to check
+     */
     isServiceRunning(serviceName: string): boolean {
         return this.grpcServiceManager.isServiceRunning(serviceName);
     }

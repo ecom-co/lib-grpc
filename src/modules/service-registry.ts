@@ -13,7 +13,7 @@ export class ServiceRegistry {
 
     register(service: ServiceConfig): void {
         this.services.set(service.name, service);
-        this.logger.log(`🔗 Registered service: ${service.name}`);
+        this.logger.log(`Registered service: ${service.name}`);
     }
 
     unregister(serviceName: string): void {
