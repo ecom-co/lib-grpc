@@ -1,9 +1,10 @@
 # @ecom-co/grpc
 
-A comprehensive gRPC library for the e-commerce platform, providing standardized error handling, validation, service management, and utilities for gRPC services.
+A comprehensive gRPC library for the e-commerce platform, providing standardized error handling, validation, service management, and enterprise-scale features for gRPC services.
 
 ## Features
 
+### Core Features
 - **Comprehensive Error Handling**: Pre-built exceptions for all gRPC status codes
 - **Advanced Exception Filter**: High-performance error filtering with logging, metrics, and rate limiting
 - **Validation Pipeline**: Built-in validation pipe for request data validation
@@ -12,6 +13,15 @@ A comprehensive gRPC library for the e-commerce platform, providing standardized
 - **Type-Safe Constants**: Strongly-typed gRPC status codes and error mappings
 - **Performance Optimized**: Caching, async logging, and memory management
 - **Utilities**: Helper functions for service configuration and port management
+
+### 🚀 Scale Features (NEW!)
+- **Service Discovery**: Dynamic service registration and discovery (Memory, Consul, etcd)
+- **Circuit Breaker**: Fault tolerance and resilience patterns
+- **Health Checks**: Automated service health monitoring
+- **Distributed Tracing**: Request tracing across services with Jaeger integration
+- **Clustering**: Multi-node coordination and leader election
+
+> 📖 For detailed scale features documentation, see [SCALE_FEATURES.md](./SCALE_FEATURES.md)
 
 ## Installation
 
@@ -258,6 +268,38 @@ async createUser(
 - `maxDetailsSize`: Limit error detail size to prevent memory issues
 - `errorRateLimit`: Maximum errors to log per time window
 - `rateLimitWindowMs`: Time window for rate limiting
+
+## Enhanced Features Quick Start
+
+```typescript
+// Enhanced module with scale features
+import { GrpcModule, GrpcModuleOptions } from '@ecom-co/grpc';
+
+const config: GrpcModuleOptions = {
+  services: [
+    {
+      name: 'User Service',
+      package: 'user',
+      protoPath: 'src/proto/user.proto',
+      port: 50052,
+      enabled: true,
+    },
+  ],
+  basePath: process.cwd(),
+  
+  // Scale features
+  serviceDiscovery: { provider: 'memory' },
+  circuitBreaker: { failureThreshold: 3, recoveryTimeout: 10000 },
+  healthCheck: { interval: 30000, timeout: 5000, retries: 3 },
+  tracing: { serviceName: 'user-service', samplingRate: 0.1 },
+  cluster: { nodeId: 'user-service-1', nodes: [], leaderElection: true }
+};
+
+@Module({
+  imports: [GrpcModule.forRoot(config)],
+})
+export class AppModule {}
+```
 
 ## Development
 
