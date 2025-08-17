@@ -1,66 +1,32 @@
-# # @ecom-co/grpc
+# @ecom-co/grpc
 
 🚀 **Modern gRPC Library** for NestJS with modular architecture, full observability, and production-ready features.
 
 ## ✨ Key Features
 
 ### 🎯 **Core Modules**
-- **GrpcModule**: Auto-bootstrap gRPC services on app startup
+- **GrpcModule**: Configure and manage gRPC services 
 - **ServiceRegistry**: Dynamic service configuration management  
-- **GrpcBootstrapper**: Lifecycle management with graceful shutdown
+- **GrpcStarter**: Manual lifecycle management with graceful shutdown
+- **GrpcServiceManager**: Real gRPC service orchestration
 
-### 🎨 **Smart ## 🔄 Migration Guide
-
-From old architecture:
-
-```typescript
-// OLD: Manual service setup
-const userService = app.connectMicroservice({
-  transport: Transport.GRPC,
-  options: { /* config */ }
-});
-await app.startAllMicroservices();
-
-// NEW: Auto bootstrap
-@Module({
-  imports: [GrpcModule.forRoot({ services: [...] })]
-})
-export class AppModule {} // Services auto-start!
-```@TraceOperation**: UUID tracing with structured logging
+### 🎨 **Smart Decorators** 
+- **@TraceOperation**: UUID tracing with structured logging
 - **@MonitorPerformance**: Real-time performance monitoring + memory tracking
 - **@Cacheable**: TTL-based method result caching
 - **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
 
 ### 🔧 **Production Enhancements**
-- **Circuit Breaker**: Fault tolerance with auto-recovery
-- **Distributed Tracing**: Cross-service request tracing with span management
-- **Exception Handling**: gRPC-specific error handling + filters
-- **Validation**: Type-safe request validation pipesModern gRPC Library** cho NestJS với architecture modular, observability đầy đủ và production-ready features.
-
-## ✨ Feature
-
-### 🎯 **Core Modules**
-- **GrpcModule**: Auto-bootstrap gRPC services khi app startup
-- **ServiceRegistry**: Quản lý dynamic service configuration  
-- **GrpcBootstrapper**: Lifecycle management với graceful shutdown
-
-### 🎨 **Smart Decorators** 
-- **@TraceOperation**: UUID tracing với structured logging
-- **@MonitorPerformance**: Real-time performance monitoring + memory tracking
-- **@Cacheable**: TTL-based method result caching
-- **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
-
-### � **Production Enhancements**
-- **Circuit Breaker**: Fault tolerance với auto-recovery
-- **Distributed Tracing**: Cross-service request tracing với span management
 - **Exception Handling**: gRPC-specific error handling + filters
 - **Validation**: Type-safe request validation pipes
+- **Clean Logging**: Professional, emoji-free logging system
+- **Deferred Initialization**: Proper service startup sequence
 
 ## 📦 Installation
 
-\`\`\`bash
+```bash
 npm install @ecom-co/grpc
-\`\`\`
+```
 
 ### Dependencies
 - `@nestjs/common` >= 10.0.0
@@ -71,7 +37,7 @@ npm install @ecom-co/grpc
 
 ### 1. **App Module Setup**
 
-\`\`\`typescript
+```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { GrpcModule } from '@ecom-co/grpc';
@@ -81,60 +47,73 @@ import { GrpcModule } from '@ecom-co/grpc';
     GrpcModule.forRoot({
       services: [
         {
-          name: 'user',
-          package: 'user.v1',
-          protoPath: './proto/user.proto'
+          name: 'User Service',
+          package: 'user',
+          protoPath: 'src/proto/services/user.proto',
+          url: 'localhost:50052'
         },
         {
-          name: 'order', 
-          package: 'order.v1',
-          protoPath: './proto/order.proto'
+          name: 'App Service',
+          package: 'app', 
+          protoPath: 'src/proto/app.proto',
+          url: 'localhost:50053'
         }
       ]
     })
   ]
 })
 export class AppModule {}
-\`\`\`
+```
 
-### 2. **Main.ts Bootstrap**
+### 2. **Main.ts Bootstrap with Deferred Initialization**
 
-\`\`\`typescript
+```typescript
 // main.ts
 import { NestFactory } from '@nestjs/core';
+import { GrpcStarter } from '@ecom-co/grpc';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable graceful shutdown
-  app.enableShutdownHooks();
+  // Start the application first
+  await app.init();
   
-  await app.listen(3000);
-  console.log('🚀 HTTP Server: http://localhost:3000');
-  console.log('🔌 gRPC services auto-started by GrpcBootstrapper');
+  const logger = new Logger('Bootstrap');
+  logger.log('Application started successfully!');
+
+  // Use setImmediate to defer gRPC startup until after all current operations
+  setImmediate(() => {
+    void (async () => {
+      try {
+        const grpcStarter = app.get(GrpcStarter);
+        grpcStarter.setAppModule(AppModule);
+        await grpcStarter.start();
+        logger.log('gRPC services bootstrapped manually!');
+      } catch (error) {
+        logger.error('Failed to start gRPC services:', error);
+      }
+    })();
+  });
 }
 
 bootstrap();
-\`\`\`
+```
 
 **Expected output:**
-\`\`\`
-**Expected output:**
 ```
-🚀 Starting gRPC services bootstrap...
-🟢 Service 'user' started at localhost:50051
-🟢 Service 'order' started at localhost:50052
-✅ Successfully bootstrapped 2 gRPC services
-🚀 HTTP Server: http://localhost:3000
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [Bootstrap] Application started successfully!
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] gRPC server created for User Service at localhost:50052
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Service 'User Service' started at localhost:50052
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] gRPC server created for App Service at localhost:50053
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Service 'App Service' started at localhost:50053
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Successfully started 2 gRPC services
+[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [Bootstrap] gRPC services bootstrapped manually!
 ```
 
 ### 3. **Service Implementation with Decorators**
-\`\`\`
 
-### 3. **Service Implementation với Decorators**
-
-\`\`\`typescript
+```typescript
 // user.service.ts
 import { Injectable } from '@nestjs/common';
 import { 
@@ -191,94 +170,13 @@ export class UserService {
     return newUser;
   }
 }
-\`\`\`
+```
 
 ## 🔧 Advanced Features
 
-### **Circuit Breaker Protection**
-
-\`\`\`typescript
-// app.module.ts
-import { CircuitBreakerModule } from '@ecom-co/grpc';
-
-@Module({
-  imports: [
-    CircuitBreakerModule.forRoot({
-      failureThreshold: 5,    // Open after 5 failures
-      recoveryTimeout: 30000, // Try recovery after 30s
-      monitoringPeriod: 10000 // Monitor every 10s
-    })
-  ]
-})
-export class AppModule {}
-
-// service.ts - Auto protection
-@Injectable()
-export class ExternalApiService {
-  constructor(private circuitBreaker: CircuitBreakerService) {}
-
-  async callExternalApi(data: any) {
-    return this.circuitBreaker.execute(
-      'external-api',
-      () => this.httpService.post('/api/endpoint', data).toPromise()
-    );
-  }
-}
-\`\`\`
-
-### **Distributed Tracing**
-
-\`\`\`typescript
-// app.module.ts
-import { TracingModule } from '@ecom-co/grpc';
-
-@Module({
-  imports: [
-    TracingModule.forRoot({
-      serviceName: 'user-service',
-      enableSampling: true,
-      samplingRate: 0.1, // 10% sampling
-      maxSpans: 10000
-    })
-  ]
-})
-export class AppModule {}
-
-// service.ts - Manual tracing
-@Injectable() 
-export class UserService {
-  constructor(private tracer: DistributedTracer) {}
-
-  async complexOperation(userId: string) {
-    const span = this.tracer.startSpan('complex-operation', null, {
-      'user.id': userId,
-      'operation.type': 'business-logic'
-    });
-
-    try {
-      // Step 1
-      this.tracer.addLog(span.spanId, 'info', 'Starting database lookup');
-      const user = await this.findUser(userId);
-      
-      // Step 2  
-      this.tracer.addTags(span.spanId, { 'user.found': !!user });
-      const result = await this.processUser(user);
-      
-      this.tracer.finishSpan(span.spanId, 'completed');
-      return result;
-      
-    } catch (error) {
-      this.tracer.addLog(span.spanId, 'error', error.message);
-      this.tracer.finishSpan(span.spanId, 'failed');
-      throw error;
-    }
-  }
-}
-\`\`\`
-
 ### **Exception Handling**
 
-\`\`\`typescript
+```typescript
 import { 
   GrpcNotFoundException,
   GrpcInvalidArgumentException,
@@ -296,7 +194,7 @@ export class UserService {
     
     const user = await this.userRepo.findOne(id);
     if (!user) {
-      throw new GrpcNotFoundException(\`User with ID \${id} not found\`);
+      throw new GrpcNotFoundException(`User with ID ${id} not found`);
     }
     
     return user;
@@ -320,13 +218,10 @@ export class UserService {
 export class UserController {
   // All methods protected
 }
-\`\`\`
+```
 
 ## 📊 Observability & Monitoring
 
-### **Performance Metrics**
-
-\`\`\`typescript
 ### **Performance Metrics**
 
 ```typescript
@@ -352,9 +247,9 @@ async heavyOperation() {
 
 ```typescript
 // Each request has unique trace ID:
-// 🟢 [abc-123-def] Starting getUserById
-// 📝 [abc-123-def] Database query executed  
-// ✅ [abc-123-def] Completed getUserById in 45ms
+// [abc-123-def] Starting getUserById
+// [abc-123-def] Database query executed  
+// [abc-123-def] Completed getUserById in 45ms
 
 @TraceOperation({ 
   includeArgs: true,
@@ -363,53 +258,34 @@ async heavyOperation() {
 async getUserById(id: string) {
   // Auto logging with structured data
 }
-\`\`\`
-
-### **Request Tracing**
-
-\`\`\`typescript
-// Mỗi request có unique trace ID:
-// 🟢 [abc-123-def] Starting getUserById
-// 📝 [abc-123-def] Database query executed  
-// ✅ [abc-123-def] Completed getUserById in 45ms
-
-@TraceOperation({ 
-  includeArgs: true,
-  includeResult: true 
-})
-async getUserById(id: string) {
-  // Auto logging với structured data
-}
-\`\`\`
+```
 
 ## 🏗️ Architecture
 
-\`\`\`
+```
 @ecom-co/grpc/
 ├── modules/           # Core gRPC functionality
 │   ├── grpc.module.ts        # Main module  
 │   ├── grpc.service.ts       # Core service
 │   ├── service-registry.ts   # Dynamic config
-│   └── grpc-bootstrapper.ts  # Auto startup
+│   ├── grpc-starter.ts       # Manual startup control
+│   └── grpc-service-manager.ts # Real service orchestration
 ├── decorators/        # Smart decorators
 │   ├── trace-operation.decorator.ts
 │   ├── monitor-performance.decorator.ts
 │   ├── cacheable.decorator.ts
 │   └── enhanced-operation.decorator.ts
-├── enhancements/      # Production features
-│   ├── circuit-breaker/
-│   └── tracing/
 ├── exceptions/        # Error handling
 ├── filters/          # Exception filters
 ├── pipes/            # Validation pipes
 └── constants/        # Shared constants
-\`\`\`
+```
 
 ## 🔄 Migration Guide
 
-Từ old architecture:
+From old architecture:
 
-\`\`\`typescript
+```typescript
 // OLD: Manual service setup
 const userService = app.connectMicroservice({
   transport: Transport.GRPC,
@@ -417,24 +293,22 @@ const userService = app.connectMicroservice({
 });
 await app.startAllMicroservices();
 
-// NEW: Auto bootstrap
-@Module({
-  imports: [GrpcModule.forRoot({ services: [...] })]
-})
-export class AppModule {} // Services tự động start!
-\`\`\`
+// NEW: Deferred startup with GrpcStarter
+const grpcStarter = app.get(GrpcStarter);
+await grpcStarter.start(); // Manual control
+```
 
 ## 📈 Production Tips
 
-1. **Sampling**: Set `samplingRate: 0.1` for high-traffic services
-2. **Cache TTL**: Adjust based on data freshness requirements  
-3. **Circuit Breaker**: Tune thresholds according to service SLAs
-4. **Performance**: Monitor memory usage in `@MonitorPerformance`
-5. **Graceful Shutdown**: Always enable `app.enableShutdownHooks()`
+1. **Deferred Initialization**: Use `setImmediate` for proper service startup sequence
+2. **Clean Logging**: Professional, emoji-free logs for production environments
+3. **Performance**: Monitor memory usage in `@MonitorPerformance`
+4. **Exception Handling**: Use proper gRPC exception types
+5. **Service Management**: Use `GrpcStarter` for manual lifecycle control
 
 ## 📝 Development
 
-\`\`\`bash
+```bash
 # Build
 pnpm build
 
@@ -443,7 +317,7 @@ pnpm lint:fix
 
 # Test
 pnpm test
-\`\`\`
+```
 
 ## 📄 License
 
