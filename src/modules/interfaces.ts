@@ -1,13 +1,13 @@
 import type { DynamicModule, INestMicroservice, Type } from '@nestjs/common';
 
 /**
- * Configuration for individual gRPC service
+ * Server configuration for hosting gRPC services
  */
-export type AppModuleType = DynamicModule | Type<unknown>;
-
-export interface ServiceConfig {
+export interface GrpcServerConfig {
     /** Unique name of the service */
     name: string;
+    /** Type discriminator */
+    type: 'server';
     /** Package name in proto file */
     package: string;
     /** Path to proto file relative to project root */
@@ -21,6 +21,34 @@ export interface ServiceConfig {
     /** Custom service metadata */
     metadata?: Record<string, unknown>;
 }
+
+/**
+ * Client configuration for connecting to gRPC servers
+ */
+export interface GrpcClientConfig {
+    /** Unique name of the client */
+    name: string;
+    /** Type discriminator */
+    type: 'client';
+    /** Package name in proto file */
+    package: string;
+    /** Path to proto file relative to project root */
+    protoPath: string;
+    /** Target URL, e.g., localhost:50051 */
+    url: string;
+    /** Custom client metadata */
+    metadata?: Record<string, unknown>;
+}
+
+/**
+ * Union type for gRPC configurations
+ */
+export type GrpcConfig = GrpcClientConfig | GrpcServerConfig;
+
+/**
+ * Acceptable types for the root Nest module when creating a microservice
+ */
+export type AppModuleType = DynamicModule | Type<unknown>;
 
 /**
  * Handle to a running gRPC server instance
@@ -41,8 +69,8 @@ export interface RunningGrpcServer {
  * Global options for gRPC module
  */
 export interface GrpcCoreModuleOptions {
-    /** Array of service configurations */
-    services?: ServiceConfig[];
+    /** Array of gRPC configurations (servers and clients) */
+    configs?: GrpcConfig[];
     /** Global default host for all services */
     host?: string;
     /** Base port for auto-assignment (default: 50051) */

@@ -1,26 +1,31 @@
 # @ecom-co/grpc
 
-🚀 **Modern gRPC Library** for NestJS with modular architecture, full observability, and production-ready features.
+🚀 **Modern gRPC Library** for NestJS with hybrid architecture, discriminated union types, and production-ready features.
 
 ## ✨ Key Features
 
 ### 🎯 **Core Modules**
-- **GrpcModule**: Configure and manage gRPC services 
-- **ServiceRegistry**: Dynamic service configuration management  
+- **GrpcModule**: Configure and manage gRPC services & clients
+- **ServiceRegistry**: Dynamic service configuration management with auto uppercase
 - **GrpcStarter**: Manual lifecycle management with graceful shutdown
-- **GrpcServiceManager**: Real gRPC service orchestration
+- **GrpcServiceManager**: Hybrid gRPC service orchestration
+- **GrpcClientFactory**: Client connection management
+- **GrpcClientModule**: Feature-based client providers
 
 ### 🎨 **Smart Decorators** 
+- **@GrpcClient()**: Inject gRPC clients by name with auto uppercase
 - **@TraceOperation**: UUID tracing with structured logging
 - **@MonitorPerformance**: Real-time performance monitoring + memory tracking
 - **@Cacheable**: TTL-based method result caching
 - **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
 
 ### 🔧 **Production Enhancements**
+- **Hybrid Architecture**: Single app instance for HTTP + gRPC
+- **Discriminated Union Types**: Type-safe server/client configurations
+- **Auto Uppercase**: Consistent naming with automatic normalization
 - **Exception Handling**: gRPC-specific error handling + filters
 - **Validation**: Type-safe request validation pipes
 - **Clean Logging**: Professional, emoji-free logging system
-- **Deferred Initialization**: Proper service startup sequence
 
 ## 📦 Installation
 
@@ -32,86 +37,105 @@ npm install @ecom-co/grpc
 - `@nestjs/common` >= 10.0.0
 - `@nestjs/core` >= 10.0.0  
 - `@nestjs/microservices` >= 10.0.0
+- `lodash` >= 4.17.0
 
 ## 🚀 Quick Start
 
-### 1. **App Module Setup**
+### 1. **App Module Setup with Discriminated Union Types**
 
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { GrpcModule } from '@ecom-co/grpc';
+import { GrpcModule, GrpcClientModule, GrpcConfig } from '@ecom-co/grpc';
+
+const configs: GrpcConfig[] = [
+  // Server configuration
+  {
+    name: 'user-service',
+    type: 'server',
+    package: 'user',
+    protoPath: 'proto/user.proto',
+    host: '0.0.0.0',
+    port: 50051
+  },
+  // Client configuration
+  {
+    name: 'order-client',
+    type: 'client',
+    package: 'order',
+    protoPath: 'proto/order.proto',
+    url: 'localhost:50052'
+  }
+];
 
 @Module({
   imports: [
-    GrpcModule.forRoot({
-      services: [
-        {
-          name: 'User Service',
-          package: 'user',
-          protoPath: 'src/proto/services/user.proto',
-          url: 'localhost:50052'
-        },
-        {
-          name: 'App Service',
-          package: 'app', 
-          protoPath: 'src/proto/app.proto',
-          url: 'localhost:50053'
-        }
-      ]
-    })
+    GrpcModule.forRoot({ configs }),
+    GrpcClientModule.forFeature(['order-client']) // Auto creates providers
   ]
 })
 export class AppModule {}
 ```
 
-### 2. **Main.ts Bootstrap with Deferred Initialization**
+### 2. **Main.ts Bootstrap with Hybrid Approach**
 
 ```typescript
 // main.ts
 import { NestFactory } from '@nestjs/core';
-import { GrpcStarter } from '@ecom-co/grpc';
+import { GrpcStarter, GrpcClientFactory } from '@ecom-co/grpc';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Start the application first
-  await app.init();
+  // Set app instance for hybrid microservices
+  const starter = app.get(GrpcStarter);
+  starter.setApp(app);
   
-  const logger = new Logger('Bootstrap');
-  logger.log('Application started successfully!');
-
-  // Use setImmediate to defer gRPC startup until after all current operations
-  setImmediate(() => {
-    void (async () => {
-      try {
-        const grpcStarter = app.get(GrpcStarter);
-        grpcStarter.setAppModule(AppModule);
-        await grpcStarter.start();
-        logger.log('gRPC services bootstrapped manually!');
-      } catch (error) {
-        logger.error('Failed to start gRPC services:', error);
-      }
-    })();
-  });
+  // Start all gRPC services (connects to main app)
+  starter.start();
+  
+  // Initialize all gRPC clients
+  const configs = app.get('GRPC_CORE_OPTIONS').configs;
+  await GrpcClientFactory.initializeClients(configs);
+  
+  // Start HTTP server (gRPC services already connected)
+  await app.listen(3000);
+  
+  console.log('🚀 Application running on port 3000');
+  console.log('🔗 gRPC services connected to main app');
 }
 
 bootstrap();
 ```
 
-**Expected output:**
-```
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [Bootstrap] Application started successfully!
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] gRPC server created for User Service at localhost:50052
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Service 'User Service' started at localhost:50052
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] gRPC server created for App Service at localhost:50053
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Service 'App Service' started at localhost:50053
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [GrpcServiceManager] Successfully started 2 gRPC services
-[Nest] 78921  - 08/18/2025, 3:10:43 AM     LOG [Bootstrap] gRPC services bootstrapped manually!
+### 3. **Service Implementation with @GrpcClient Decorator**
+
+```typescript
+// user.service.ts
+import { Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+import { GrpcClient } from '@ecom-co/grpc';
+
+interface UserService {
+  GetUser(data: { id: string }): any;
+}
+
+@Injectable()
+export class UserService {
+  // Auto injects 'ORDER-CLIENT' (normalized to uppercase)
+  @GrpcClient('order-client')
+  private orderClient!: ClientProxy;
+
+  async getUser(id: string) {
+    const orderSvc = this.orderClient.getService<UserService>('OrderService');
+    return firstValueFrom(orderSvc.GetUser({ id }));
+  }
+}
 ```
 
-### 3. **Service Implementation with Decorators**
+### 4. **Advanced Service with All Decorators**
 
 ```typescript
 // user.service.ts
@@ -173,6 +197,43 @@ export class UserService {
 ```
 
 ## 🔧 Advanced Features
+
+### **Type-Safe Configuration with Discriminated Union**
+
+```typescript
+// TypeScript knows exactly which fields are available
+const serverConfig: GrpcServerConfig = {
+  name: 'user-service',
+  type: 'server', // TypeScript knows this has host, port
+  package: 'user',
+  protoPath: 'proto/user.proto',
+  host: '0.0.0.0',
+  port: 50051
+};
+
+const clientConfig: GrpcClientConfig = {
+  name: 'order-client', 
+  type: 'client', // TypeScript knows this has url
+  package: 'order',
+  protoPath: 'proto/order.proto',
+  url: 'localhost:50052'
+};
+```
+
+### **Auto Uppercase Naming**
+
+```typescript
+// All names are automatically normalized to uppercase
+const configs: GrpcConfig[] = [
+  { name: 'user-service', type: 'server', ... }, // → 'USER-SERVICE'
+  { name: 'Order-Client', type: 'client', ... }, // → 'ORDER-CLIENT'
+  { name: 'NOTIFICATION_CLIENT', type: 'client', ... } // → 'NOTIFICATION_CLIENT'
+];
+
+// Decorator automatically uses uppercase
+@GrpcClient('user-client') // Injects 'USER-CLIENT'
+private userClient!: ClientProxy;
+```
 
 ### **Exception Handling**
 
@@ -265,11 +326,14 @@ async getUserById(id: string) {
 ```
 @ecom-co/grpc/
 ├── modules/           # Core gRPC functionality
-│   ├── grpc.module.ts        # Main module  
-│   ├── grpc.service.ts       # Core service
-│   ├── service-registry.ts   # Dynamic config
-│   ├── grpc-starter.ts       # Manual startup control
-│   └── grpc-service-manager.ts # Real service orchestration
+│   ├── grpc.module.ts              # Main module with configs
+│   ├── grpc.service.ts             # Core service
+│   ├── service-registry.ts         # Dynamic config with auto uppercase
+│   ├── grpc-starter.ts             # Manual startup control
+│   ├── grpc-service-manager.ts     # Hybrid service orchestration
+│   ├── grpc-client.factory.ts      # Client connection management
+│   ├── grpc-client.decorator.ts    # @GrpcClient decorator
+│   └── interfaces.ts               # Discriminated union types
 ├── decorators/        # Smart decorators
 │   ├── trace-operation.decorator.ts
 │   ├── monitor-performance.decorator.ts
@@ -286,25 +350,33 @@ async getUserById(id: string) {
 From old architecture:
 
 ```typescript
-// OLD: Manual service setup
+// OLD: Separate microservices
 const userService = app.connectMicroservice({
   transport: Transport.GRPC,
   options: { /* config */ }
 });
 await app.startAllMicroservices();
 
-// NEW: Deferred startup with GrpcStarter
-const grpcStarter = app.get(GrpcStarter);
-await grpcStarter.start(); // Manual control
+// NEW: Hybrid approach with discriminated union
+const configs: GrpcConfig[] = [
+  { name: 'user-service', type: 'server', ... },
+  { name: 'order-client', type: 'client', ... }
+];
+
+const starter = app.get(GrpcStarter);
+starter.setApp(app);
+starter.start(); // Connects to main app
 ```
 
 ## 📈 Production Tips
 
-1. **Deferred Initialization**: Use `setImmediate` for proper service startup sequence
-2. **Clean Logging**: Professional, emoji-free logs for production environments
-3. **Performance**: Monitor memory usage in `@MonitorPerformance`
-4. **Exception Handling**: Use proper gRPC exception types
-5. **Service Management**: Use `GrpcStarter` for manual lifecycle control
+1. **Hybrid Architecture**: Single app instance for HTTP + gRPC (no conflicts)
+2. **Auto Uppercase**: Consistent naming prevents errors
+3. **Type Safety**: Use discriminated union types for configs
+4. **Client Management**: Use `@GrpcClient()` decorator for clean injection
+5. **Performance**: Monitor memory usage in `@MonitorPerformance`
+6. **Exception Handling**: Use proper gRPC exception types
+7. **Service Management**: Use `GrpcStarter` for manual lifecycle control
 
 ## 📝 Development
 

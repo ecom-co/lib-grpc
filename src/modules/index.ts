@@ -1,3 +1,7 @@
+export * from './grpc-client.decorator';
+
+export * from './grpc-client.factory';
+
 export * from './grpc-service-manager';
 
 export * from './grpc-starter';

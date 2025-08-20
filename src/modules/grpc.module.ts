@@ -20,6 +20,7 @@ export class GrpcModule {
         // Apply default values for safety, but respect user's isDevelopment setting
         const config: GrpcCoreModuleOptions = {
             basePort: 50051,
+            configs: [],
             host: 'localhost',
             isDevelopment: options.isDevelopment ?? process.env.NODE_ENV === 'development',
             loaderOptions: {
@@ -29,7 +30,6 @@ export class GrpcModule {
                 longs: String,
                 oneofs: true,
             },
-            services: [],
             ...options,
         };
 
@@ -41,7 +41,7 @@ export class GrpcModule {
                 },
                 {
                     provide: ServiceRegistry,
-                    useFactory: () => new ServiceRegistry(config.services || []),
+                    useFactory: () => new ServiceRegistry(config.configs || []),
                 },
                 GrpcService,
                 GrpcServiceManager,
@@ -74,6 +74,7 @@ export class GrpcModule {
                         // Apply default values for safety, but respect user's isDevelopment setting
                         return {
                             basePort: 50051,
+                            configs: [],
                             host: 'localhost',
                             isDevelopment: config.isDevelopment ?? process.env.NODE_ENV === 'development',
                             loaderOptions: {
@@ -83,7 +84,6 @@ export class GrpcModule {
                                 longs: String,
                                 oneofs: true,
                             },
-                            services: [],
                             ...config,
                         } as GrpcCoreModuleOptions;
                     },
@@ -91,7 +91,7 @@ export class GrpcModule {
                 {
                     inject: ['GRPC_CORE_OPTIONS'],
                     provide: ServiceRegistry,
-                    useFactory: (coreOptions: GrpcCoreModuleOptions) => new ServiceRegistry(coreOptions.services || []),
+                    useFactory: (coreOptions: GrpcCoreModuleOptions) => new ServiceRegistry(coreOptions.configs || []),
                 },
                 GrpcService,
                 GrpcServiceManager,

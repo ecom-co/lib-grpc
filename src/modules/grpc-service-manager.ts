@@ -1,17 +1,26 @@
 import { join } from 'path';
 
-import { NestFactory } from '@nestjs/core';
+import { NestApplication } from '@nestjs/core';
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { toUpper } from 'lodash';
+
 import { GrpcOptions, Transport } from '@nestjs/microservices';
 
-import { AppModuleType, RunningGrpcServer, ServiceConfig } from './interfaces';
+import { GrpcConfig, GrpcServerConfig, RunningGrpcServer } from './interfaces';
 import { ServiceRegistry } from './service-registry';
+
+/**
+ * Normalize service name to uppercase
+ * @param serviceName - The service name to normalize
+ * @returns Normalized service name
+ */
+const normalizeServiceName = (serviceName: string): string => toUpper(serviceName);
 
 @Injectable()
 export class GrpcServiceManager {
-    private appModule: AppModuleType | null = null;
+    private app: NestApplication | null = null;
     private basePort = 50051;
     private readonly logger = new Logger(GrpcServiceManager.name);
     private readonly runningServices = new Map<string, { port: number; server: RunningGrpcServer }>();
@@ -21,20 +30,20 @@ export class GrpcServiceManager {
     }
 
     /**
-     * Set the app module for creating microservices
+     * Set the main app instance for hybrid microservices
      */
-    setAppModule(appModule: AppModuleType): void {
-        this.appModule = appModule;
-        this.logger.log('App module set for gRPC service creation');
+    setApp(app: NestApplication): void {
+        this.app = app;
+        this.logger.log('Main app set for hybrid gRPC services');
     }
 
     /**
      * Manually start all registered gRPC services
      */
-    async startAllServices(): Promise<void> {
+    startAllServices(): void {
         this.logger.log('Starting gRPC services...');
 
-        const services = this.serviceRegistry.getAll();
+        const services = this.serviceRegistry.getServers();
 
         if (services.length === 0) {
             this.logger.warn('No gRPC services found to start');
@@ -42,8 +51,12 @@ export class GrpcServiceManager {
             return;
         }
 
+        if (!this.app) {
+            throw new Error('Main app is required to start gRPC services');
+        }
+
         for (const service of services) {
-            await this.startService(service);
+            this.startService(service);
         }
 
         this.logger.log(`Successfully started ${services.length} gRPC services`);
@@ -68,12 +81,12 @@ export class GrpcServiceManager {
         this.logger.log('All gRPC services stopped');
     }
 
-    private async startService(config: ServiceConfig): Promise<void> {
+    private startService(config: GrpcServerConfig): void {
         const port = config.port || this.getNextAvailablePort();
         const host = config.host || 'localhost';
 
         try {
-            const server = await this.createGrpcServer(config, host, port);
+            const server = this.createGrpcServer(config, host, port);
 
             this.runningServices.set(config.name, { port, server });
 
@@ -87,65 +100,63 @@ export class GrpcServiceManager {
     }
 
     private async stopService(serviceName: string): Promise<void> {
-        const serviceInfo = this.runningServices.get(serviceName);
+        const normalizedName = normalizeServiceName(serviceName);
+        const serviceInfo = this.runningServices.get(normalizedName);
 
         if (!serviceInfo) {
-            this.logger.warn(`Service '${serviceName}' not found in running services`);
+            this.logger.warn(`Service '${normalizedName}' not found in running services`);
 
             return;
         }
 
         try {
             await this.shutdownGrpcServer(serviceInfo.server);
-            this.runningServices.delete(serviceName);
+            this.runningServices.delete(normalizedName);
 
-            this.logger.log(`Service '${serviceName}' stopped`);
+            this.logger.log(`Service '${normalizedName}' stopped`);
         } catch (error) {
-            this.logger.error(`Error stopping service '${serviceName}':`, error);
+            this.logger.error(`Error stopping service '${normalizedName}':`, error);
             throw error;
         }
     }
 
     /**
-     * Create a dedicated gRPC microservice for each service
+     * Connect gRPC microservice to main app (hybrid approach)
      */
-    /**
-     * Start a single gRPC service using NestFactory.createMicroservice
-     */
-    private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<RunningGrpcServer> {
+    private createGrpcServer(config: GrpcServerConfig, host: string, port: number): RunningGrpcServer {
         this.logger.debug(`Creating gRPC server for ${config.name}...`);
         this.logger.debug(`Host: ${host}`);
         this.logger.debug(`Port: ${port}`);
         this.logger.debug(`Proto: ${config.protoPath}`);
         this.logger.debug(`Package: ${config.package}`);
 
-        if (!this.appModule) {
-            throw new Error('App module is required to create gRPC services');
+        if (!this.app) {
+            throw new Error('Main app is required to create gRPC services');
         }
 
         // Get microservice options for this service
         const microserviceOptions = this.getMicroserviceOptions(config, host, port);
 
-        // Create real gRPC microservice using NestFactory
-        const grpcApp = await NestFactory.createMicroservice(this.appModule, microserviceOptions);
+        // Connect microservice to main app (hybrid approach)
+        const microservice = this.app.connectMicroservice(microserviceOptions);
 
-        // Start listening on the specified port
-        await grpcApp.listen();
-
-        this.logger.log(`gRPC server created for ${config.name} at ${host}:${port}`);
+        this.logger.log(`gRPC server connected for ${config.name} at ${host}:${port}`);
 
         return {
             name: config.name,
             status: 'running',
-            grpcApp, // Store the actual NestJS microservice instance
+            grpcApp: microservice, // This is the microservice instance
             host,
             package: config.package,
             port,
             protoPath: config.protoPath,
             startTime: new Date(),
-            stop: async () => {
+            stop: () => {
                 this.logger.debug(`Stopping gRPC server for ${config.name}...`);
-                await grpcApp.close();
+
+                // Note: In hybrid mode, microservices are stopped with the main app
+                // Individual microservice stop is not needed
+                return Promise.resolve();
             },
         };
     }
@@ -153,7 +164,7 @@ export class GrpcServiceManager {
     /**
      * Get microservice options for gRPC transport
      */
-    private getMicroserviceOptions(config: ServiceConfig, host: string, port: number): GrpcOptions {
+    private getMicroserviceOptions(config: GrpcServerConfig, host: string, port: number): GrpcOptions {
         return {
             options: {
                 loader: {
@@ -190,9 +201,12 @@ export class GrpcServiceManager {
     /**
      * Public methods for runtime service management
      */
-    async addService(config: ServiceConfig): Promise<void> {
+    addService(config: GrpcConfig): void {
         this.serviceRegistry.register(config);
-        await this.startService(config);
+
+        if (config.type === 'server') {
+            this.startService(config);
+        }
     }
 
     getRunningServices(): Array<{ name: string; port: number; status: string }> {
@@ -204,11 +218,15 @@ export class GrpcServiceManager {
     }
 
     async removeService(serviceName: string): Promise<void> {
-        await this.stopService(serviceName);
-        this.serviceRegistry.unregister(serviceName);
+        const normalizedName = normalizeServiceName(serviceName);
+
+        await this.stopService(normalizedName);
+        this.serviceRegistry.unregister(normalizedName);
     }
 
     isServiceRunning(serviceName: string): boolean {
-        return this.runningServices.has(serviceName);
+        const normalizedName = normalizeServiceName(serviceName);
+
+        return this.runningServices.has(normalizedName);
     }
 }

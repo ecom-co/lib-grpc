@@ -1,7 +1,9 @@
+import { NestApplication } from '@nestjs/core';
+
 import { Injectable, Logger } from '@nestjs/common';
 
 import { GrpcServiceManager } from './grpc-service-manager';
-import { AppModuleType, ServiceConfig } from './interfaces';
+import { GrpcConfig } from './interfaces';
 
 @Injectable()
 export class GrpcStarter {
@@ -12,17 +14,17 @@ export class GrpcStarter {
     }
 
     /**
-     * Set the app module for creating microservices
+     * Set the main app instance for hybrid microservices
      */
-    setAppModule(appModule: AppModuleType): void {
-        this.grpcServiceManager.setAppModule(appModule);
+    setApp(app: NestApplication): void {
+        this.grpcServiceManager.setApp(app);
     }
 
     /**
      * Manually start all gRPC services
      */
-    async start(): Promise<void> {
-        await this.grpcServiceManager.startAllServices();
+    start(): void {
+        this.grpcServiceManager.startAllServices();
     }
 
     /**
@@ -35,8 +37,8 @@ export class GrpcStarter {
     /**
      * Delegate methods to service manager
      */
-    async addService(config: ServiceConfig): Promise<void> {
-        await this.grpcServiceManager.addService(config);
+    addService(config: GrpcConfig): void {
+        this.grpcServiceManager.addService(config);
     }
 
     getRunningServices(): Array<{ name: string; port: number; status: string }> {

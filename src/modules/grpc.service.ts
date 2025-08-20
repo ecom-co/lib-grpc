@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ServiceConfig } from './interfaces';
+import { GrpcConfig, GrpcServerConfig } from './interfaces';
 import { ServiceRegistry } from './service-registry';
 
 @Injectable()
@@ -9,11 +9,11 @@ export class GrpcService {
 
     constructor(private readonly serviceRegistry: ServiceRegistry) {}
 
-    getAllServices(): ServiceConfig[] {
+    getAllServices(): GrpcConfig[] {
         return this.serviceRegistry.getAll();
     }
 
-    getServiceStatus(serviceName: string): { config?: ServiceConfig; status: 'running' | 'stopped' } {
+    getServiceStatus(serviceName: string): { config?: GrpcConfig; status: 'running' | 'stopped' } {
         const config = this.serviceRegistry.get(serviceName);
 
         return {
@@ -22,7 +22,7 @@ export class GrpcService {
         };
     }
 
-    startService(config: ServiceConfig): void {
+    startService(config: GrpcServerConfig): void {
         this.logger.log(`🚀 Starting gRPC service: ${config.name}`);
         // Core gRPC service logic here
         this.serviceRegistry.register(config);
