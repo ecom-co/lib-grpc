@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DynamicModule, Module } from '@nestjs/common';
 
 import { GrpcStarter } from './grpc-starter';
@@ -27,10 +28,10 @@ export class GrpcStarterModule {
     /**
      * Async version for manual control
      */
-    static forRootAsync(options: {
+    static forRootAsync<TArgs extends readonly any[] = readonly any[]>(options: {
         imports?: DynamicModule[];
         inject?: string[];
-        useFactory: (...args: unknown[]) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
+        useFactory: (...args: TArgs) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
     }): DynamicModule {
         return {
             imports: [

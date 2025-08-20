@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DynamicModule, Module } from '@nestjs/common';
 
 import { GrpcServiceManager } from './grpc-service-manager';
@@ -56,10 +57,10 @@ export class GrpcModule {
      * Configure gRPC module with async factory
      * @param options - Async configuration factory options
      */
-    static forRootAsync(options: {
+    static forRootAsync<TArgs extends readonly any[] = readonly any[]>(options: {
         imports?: DynamicModule[];
         inject?: string[];
-        useFactory: (...args: unknown[]) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
+        useFactory: (...args: TArgs) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
     }): DynamicModule {
         return {
             imports: options.imports || [],
@@ -67,7 +68,7 @@ export class GrpcModule {
                 {
                     inject: options.inject || [],
                     provide: 'GRPC_CORE_OPTIONS',
-                    useFactory: async (...args: unknown[]) => {
+                    useFactory: async (...args: TArgs) => {
                         const config = await options.useFactory(...args);
 
                         // Apply default values for safety, but respect user's isDevelopment setting
