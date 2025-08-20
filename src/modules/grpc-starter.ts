@@ -23,8 +23,8 @@ export class GrpcStarter {
     /**
      * Manually start all gRPC services
      */
-    start(): void {
-        this.grpcServiceManager.startAllServices();
+    async start(): Promise<void> {
+        await this.grpcServiceManager.startAllServices();
     }
 
     /**

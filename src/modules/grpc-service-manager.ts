@@ -42,7 +42,7 @@ export class GrpcServiceManager {
     /**
      * Manually start all registered gRPC services
      */
-    startAllServices(): void {
+    async startAllServices(): Promise<void> {
         this.logger.log('Starting gRPC services...');
 
         const services = this.serviceRegistry.getServers();
@@ -60,6 +60,9 @@ export class GrpcServiceManager {
         for (const service of services) {
             this.startService(service);
         }
+
+        // Start all connected microservices to ensure they listen on their ports
+        await this.app.startAllMicroservices();
 
         this.logger.log(`Successfully started ${services.length} gRPC services`);
     }
