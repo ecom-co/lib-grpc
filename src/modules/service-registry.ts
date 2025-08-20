@@ -11,17 +11,6 @@ export class ServiceRegistry {
         services.forEach((service) => this.register(service));
     }
 
-    register(service: ServiceConfig): void {
-        this.services.set(service.name, service);
-        this.logger.log(`Registered service: ${service.name}`);
-    }
-
-    unregister(serviceName: string): void {
-        if (this.services.delete(serviceName)) {
-            this.logger.log(`❌ Unregistered service: ${serviceName}`);
-        }
-    }
-
     get(serviceName: string): ServiceConfig | undefined {
         return this.services.get(serviceName);
     }
@@ -32,5 +21,16 @@ export class ServiceRegistry {
 
     has(serviceName: string): boolean {
         return this.services.has(serviceName);
+    }
+
+    register(service: ServiceConfig): void {
+        this.services.set(service.name, service);
+        this.logger.log(`Registered service: ${service.name}`);
+    }
+
+    unregister(serviceName: string): void {
+        if (this.services.delete(serviceName)) {
+            this.logger.log(`❌ Unregistered service: ${serviceName}`);
+        }
     }
 }

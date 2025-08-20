@@ -1,18 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-
 import { join } from 'path';
 
-import { ServiceConfig } from './interfaces';
+import { NestFactory } from '@nestjs/core';
+
+import { Injectable, Logger } from '@nestjs/common';
+
+import { GrpcOptions, Transport } from '@nestjs/microservices';
+
+import { AppModuleType, RunningGrpcServer, ServiceConfig } from './interfaces';
 import { ServiceRegistry } from './service-registry';
 
 @Injectable()
 export class GrpcServiceManager {
-    private readonly logger = new Logger(GrpcServiceManager.name);
-    private readonly runningServices = new Map<string, { server: any; port: number }>();
+    private appModule: AppModuleType | null = null;
     private basePort = 50051;
-    private appModule: any;
+    private readonly logger = new Logger(GrpcServiceManager.name);
+    private readonly runningServices = new Map<string, { port: number; server: RunningGrpcServer }>();
 
     constructor(private readonly serviceRegistry: ServiceRegistry) {
         this.logger.log('GrpcServiceManager initialized');
@@ -21,8 +23,7 @@ export class GrpcServiceManager {
     /**
      * Set the app module for creating microservices
      */
-    setAppModule(appModule: any): void {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    setAppModule(appModule: AppModuleType): void {
         this.appModule = appModule;
         this.logger.log('App module set for gRPC service creation');
     }
@@ -37,6 +38,7 @@ export class GrpcServiceManager {
 
         if (services.length === 0) {
             this.logger.warn('No gRPC services found to start');
+
             return;
         }
 
@@ -71,11 +73,9 @@ export class GrpcServiceManager {
         const host = config.host || 'localhost';
 
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const server = await this.createGrpcServer(config, host, port);
 
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            this.runningServices.set(config.name, { server, port });
+            this.runningServices.set(config.name, { port, server });
 
             this.logger.log(`Service '${config.name}' started at ${host}:${port}`);
             this.logger.debug(`Proto: ${config.protoPath}`);
@@ -88,8 +88,10 @@ export class GrpcServiceManager {
 
     private async stopService(serviceName: string): Promise<void> {
         const serviceInfo = this.runningServices.get(serviceName);
+
         if (!serviceInfo) {
             this.logger.warn(`Service '${serviceName}' not found in running services`);
+
             return;
         }
 
@@ -110,7 +112,7 @@ export class GrpcServiceManager {
     /**
      * Start a single gRPC service using NestFactory.createMicroservice
      */
-    private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<any> {
+    private async createGrpcServer(config: ServiceConfig, host: string, port: number): Promise<RunningGrpcServer> {
         this.logger.debug(`Creating gRPC server for ${config.name}...`);
         this.logger.debug(`Host: ${host}`);
         this.logger.debug(`Port: ${port}`);
@@ -125,8 +127,7 @@ export class GrpcServiceManager {
         const microserviceOptions = this.getMicroserviceOptions(config, host, port);
 
         // Create real gRPC microservice using NestFactory
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        const grpcApp = await NestFactory.createMicroservice(this.appModule, microserviceOptions as any);
+        const grpcApp = await NestFactory.createMicroservice(this.appModule, microserviceOptions);
 
         // Start listening on the specified port
         await grpcApp.listen();
@@ -135,13 +136,13 @@ export class GrpcServiceManager {
 
         return {
             name: config.name,
-            host,
-            port,
             status: 'running',
+            grpcApp, // Store the actual NestJS microservice instance
+            host,
             package: config.package,
+            port,
             protoPath: config.protoPath,
             startTime: new Date(),
-            grpcApp, // Store the actual NestJS microservice instance
             stop: async () => {
                 this.logger.debug(`Stopping gRPC server for ${config.name}...`);
                 await grpcApp.close();
@@ -152,32 +153,22 @@ export class GrpcServiceManager {
     /**
      * Get microservice options for gRPC transport
      */
-    private getMicroserviceOptions(config: ServiceConfig, host: string, port: number): MicroserviceOptions {
+    private getMicroserviceOptions(config: ServiceConfig, host: string, port: number): GrpcOptions {
         return {
-            transport: Transport.GRPC,
             options: {
+                loader: {
+                    defaults: true,
+                    enums: String,
+                    keepCase: true,
+                    longs: String,
+                    oneofs: true,
+                },
                 package: config.package,
                 protoPath: join(process.cwd(), config.protoPath),
                 url: `${host}:${port}`,
-                loader: {
-                    keepCase: true,
-                    longs: String,
-                    enums: String,
-                    defaults: true,
-                    oneofs: true,
-                },
             },
+            transport: Transport.GRPC,
         };
-    }
-
-    private async shutdownGrpcServer(server: any): Promise<void> {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (server && typeof server === 'object' && 'stop' in server && typeof server.stop === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-            await server.stop();
-        }
-
-        this.logger.debug('gRPC server shutdown complete');
     }
 
     private getNextAvailablePort(): number {
@@ -190,6 +181,12 @@ export class GrpcServiceManager {
         return this.basePort++;
     }
 
+    private async shutdownGrpcServer(server: RunningGrpcServer): Promise<void> {
+        await server.stop();
+
+        this.logger.debug('gRPC server shutdown complete');
+    }
+
     /**
      * Public methods for runtime service management
      */
@@ -198,17 +195,17 @@ export class GrpcServiceManager {
         await this.startService(config);
     }
 
-    async removeService(serviceName: string): Promise<void> {
-        await this.stopService(serviceName);
-        this.serviceRegistry.unregister(serviceName);
-    }
-
     getRunningServices(): Array<{ name: string; port: number; status: string }> {
         return Array.from(this.runningServices.entries()).map(([name, { port }]) => ({
             name,
-            port,
             status: 'running',
+            port,
         }));
+    }
+
+    async removeService(serviceName: string): Promise<void> {
+        await this.stopService(serviceName);
+        this.serviceRegistry.unregister(serviceName);
     }
 
     isServiceRunning(serviceName: string): boolean {

@@ -1,3 +1,5 @@
 export * from './circuit-breaker.module';
-export * from './interfaces';
+
 export * from './circuit-breaker.service';
+
+export type * from './interfaces';

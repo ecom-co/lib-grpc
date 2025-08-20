@@ -11,43 +11,43 @@ import { CircuitBreakerConfig } from './interfaces';
 export class GrpcCircuitBreakerModule {
     static forRoot(config: CircuitBreakerConfig): DynamicModule {
         return {
-            module: GrpcCircuitBreakerModule,
             providers: [
                 {
                     provide: 'CIRCUIT_BREAKER_CONFIG',
                     useValue: config,
                 },
                 {
+                    inject: ['CIRCUIT_BREAKER_CONFIG'],
                     provide: CircuitBreakerService,
                     useFactory: (cbConfig: CircuitBreakerConfig) => new CircuitBreakerService(cbConfig),
-                    inject: ['CIRCUIT_BREAKER_CONFIG'],
                 },
             ],
             exports: [CircuitBreakerService, 'CIRCUIT_BREAKER_CONFIG'],
             global: true,
+            module: GrpcCircuitBreakerModule,
         };
     }
 
     static forRootAsync(options: {
-        useFactory: (...args: unknown[]) => Promise<CircuitBreakerConfig> | CircuitBreakerConfig;
         inject?: string[];
+        useFactory: (...args: unknown[]) => CircuitBreakerConfig | Promise<CircuitBreakerConfig>;
     }): DynamicModule {
         return {
-            module: GrpcCircuitBreakerModule,
             providers: [
                 {
+                    inject: options.inject || [],
                     provide: 'CIRCUIT_BREAKER_CONFIG',
                     useFactory: options.useFactory,
-                    inject: options.inject || [],
                 },
                 {
+                    inject: ['CIRCUIT_BREAKER_CONFIG'],
                     provide: CircuitBreakerService,
                     useFactory: (config: CircuitBreakerConfig) => new CircuitBreakerService(config),
-                    inject: ['CIRCUIT_BREAKER_CONFIG'],
                 },
             ],
             exports: [CircuitBreakerService, 'CIRCUIT_BREAKER_CONFIG'],
             global: true,
+            module: GrpcCircuitBreakerModule,
         };
     }
 }

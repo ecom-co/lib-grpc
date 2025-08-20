@@ -10,16 +10,16 @@ export class GrpcValidationException extends RpcException {
     ) {
         super({
             code: GRPC_STATUS_CODES.INVALID_ARGUMENT,
-            message,
             details: JSON.stringify({ errors, fieldErrors }),
+            message,
         });
-    }
-
-    getValidationMessages(): string[] {
-        return this.errors;
     }
 
     getFieldErrors(): Record<string, Record<string, string>> | undefined {
         return this.fieldErrors;
+    }
+
+    getValidationMessages(): string[] {
+        return this.errors;
     }
 }

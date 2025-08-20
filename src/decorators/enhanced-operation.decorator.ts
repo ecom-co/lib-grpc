@@ -1,15 +1,15 @@
-import { Logger } from '@nestjs/common';
-
 import { randomUUID } from 'crypto';
 
+import { Logger } from '@nestjs/common';
+
 export interface EnhancedOperationOptions {
-    operationName?: string;
-    includeArgs?: boolean;
-    includeResult?: boolean;
-    performanceThreshold?: number;
     cacheEnabled?: boolean;
     cacheTtl?: number;
+    includeArgs?: boolean;
+    includeResult?: boolean;
     logger?: Logger;
+    operationName?: string;
+    performanceThreshold?: number;
 }
 
 interface CacheEntry<T = unknown> {
@@ -21,25 +21,28 @@ interface CacheEntry<T = unknown> {
 class EnhancedCache {
     private cache = new Map<string, CacheEntry>();
 
+    get<T>(key: string): null | T {
+        const entry = this.cache.get(key);
+
+        if (!entry) return null;
+
+        const isExpired = Date.now() - entry.timestamp > entry.ttl;
+
+        if (isExpired) {
+            this.cache.delete(key);
+
+            return null;
+        }
+
+        return entry.data as T;
+    }
+
     set<T>(key: string, data: T, ttl: number): void {
         this.cache.set(key, {
             data,
             timestamp: Date.now(),
             ttl: ttl * 1000,
         });
-    }
-
-    get<T>(key: string): T | null {
-        const entry = this.cache.get(key);
-        if (!entry) return null;
-
-        const isExpired = Date.now() - entry.timestamp > entry.ttl;
-        if (isExpired) {
-            this.cache.delete(key);
-            return null;
-        }
-
-        return entry.data as T;
     }
 
     clear(): void {
@@ -75,22 +78,24 @@ export const EnhancedOperation =
             if (options.cacheEnabled) {
                 const cacheKey = `${operationName}:${JSON.stringify(args)}`;
                 const cached = enhancedCache.get(cacheKey);
+
                 if (cached !== null) {
                     logger.debug(`💾 [${traceId}] Cache hit for ${operationName}`, {
-                        traceId,
-                        operation: operationName,
                         cached: true,
+                        operation: operationName,
                         timestamp: new Date().toISOString(),
+                        traceId,
                     });
+
                     return cached;
                 }
             }
 
             logger.log(`🟢 [${traceId}] Starting ${operationName}`, {
-                traceId,
-                operation: operationName,
                 args: options.includeArgs ? args : '[hidden]',
+                operation: operationName,
                 timestamp: new Date().toISOString(),
+                traceId,
             });
 
             try {
@@ -102,16 +107,16 @@ export const EnhancedOperation =
 
                 // Performance monitoring
                 const performanceData = {
-                    traceId,
-                    operation: operationName,
                     duration: `${duration.toFixed(2)}ms`,
                     memory: {
+                        external: endMemory.external - startMemory.external,
                         heapDelta: endMemory.heapUsed - startMemory.heapUsed,
                         heapTotal: endMemory.heapTotal,
-                        external: endMemory.external - startMemory.external,
                     },
+                    operation: operationName,
                     result: options.includeResult ? result : '[hidden]',
                     timestamp: new Date().toISOString(),
+                    traceId,
                 };
 
                 if (duration > performanceThreshold) {
@@ -129,6 +134,7 @@ export const EnhancedOperation =
                 // Cache result if enabled
                 if (options.cacheEnabled) {
                     const cacheKey = `${operationName}:${JSON.stringify(args)}`;
+
                     enhancedCache.set(cacheKey, result, cacheTtl);
                     logger.debug(`💾 [${traceId}] Cached result for ${operationName} (TTL: ${cacheTtl}s)`);
                 }
@@ -141,12 +147,12 @@ export const EnhancedOperation =
                 const errorStack = error instanceof Error ? error.stack : undefined;
 
                 logger.error(`❌ [${traceId}] Failed ${operationName} in ${duration.toFixed(2)}ms`, {
-                    traceId,
-                    operation: operationName,
                     duration: `${duration.toFixed(2)}ms`,
                     error: errorMessage,
+                    operation: operationName,
                     stack: errorStack,
                     timestamp: new Date().toISOString(),
+                    traceId,
                 });
 
                 throw error;

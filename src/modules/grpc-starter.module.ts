@@ -16,11 +16,11 @@ export class GrpcStarterModule {
      */
     static forRoot(options: GrpcCoreModuleOptions = {}): DynamicModule {
         return {
-            module: GrpcStarterModule,
             imports: [GrpcModule.forRoot(options)],
             providers: [GrpcStarter],
             exports: [GrpcStarter],
             global: false, // Not global by default
+            module: GrpcStarterModule,
         };
     }
 
@@ -28,23 +28,23 @@ export class GrpcStarterModule {
      * Async version for manual control
      */
     static forRootAsync(options: {
-        useFactory: (...args: unknown[]) => Promise<GrpcCoreModuleOptions> | GrpcCoreModuleOptions;
-        inject?: string[];
         imports?: DynamicModule[];
+        inject?: string[];
+        useFactory: (...args: unknown[]) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
     }): DynamicModule {
         return {
-            module: GrpcStarterModule,
             imports: [
                 ...(options.imports || []),
                 GrpcModule.forRootAsync({
-                    useFactory: options.useFactory,
-                    inject: options.inject,
                     imports: options.imports,
+                    inject: options.inject,
+                    useFactory: options.useFactory,
                 }),
             ],
             providers: [GrpcStarter],
             exports: [GrpcStarter],
             global: false,
+            module: GrpcStarterModule,
         };
     }
 }

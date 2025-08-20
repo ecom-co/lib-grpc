@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
 
 export interface CacheableOptions {
-    ttl?: number; // seconds
     key?: string;
     logger?: Logger;
+    ttl?: number; // seconds
 }
 
 interface CacheEntry<T = unknown> {
@@ -18,25 +18,28 @@ interface CacheEntry<T = unknown> {
 class MethodCache {
     private cache = new Map<string, CacheEntry>();
 
+    get<T>(key: string): null | T {
+        const entry = this.cache.get(key);
+
+        if (!entry) return null;
+
+        const isExpired = Date.now() - entry.timestamp > entry.ttl;
+
+        if (isExpired) {
+            this.cache.delete(key);
+
+            return null;
+        }
+
+        return entry.data as T;
+    }
+
     set<T>(key: string, data: T, ttl: number): void {
         this.cache.set(key, {
             data,
             timestamp: Date.now(),
             ttl: ttl * 1000, // Convert to ms
         });
-    }
-
-    get<T>(key: string): T | null {
-        const entry = this.cache.get(key);
-        if (!entry) return null;
-
-        const isExpired = Date.now() - entry.timestamp > entry.ttl;
-        if (isExpired) {
-            this.cache.delete(key);
-            return null;
-        }
-
-        return entry.data as T;
     }
 
     clear(): void {
@@ -68,19 +71,21 @@ export const Cacheable =
 
             // Try to get from cache
             const cached = globalCache.get(cacheKey);
+
             if (cached !== null) {
                 logger.debug(`💾 Cache hit for ${propertyKey}`, {
-                    method: propertyKey,
                     cacheKey,
+                    method: propertyKey,
                     timestamp: new Date().toISOString(),
                 });
+
                 return cached;
             }
 
             // Execute original method
             logger.debug(`🔍 Cache miss for ${propertyKey}`, {
-                method: propertyKey,
                 cacheKey,
+                method: propertyKey,
                 timestamp: new Date().toISOString(),
             });
 
@@ -91,18 +96,18 @@ export const Cacheable =
                 globalCache.set(cacheKey, result, ttl);
 
                 logger.debug(`💾 Cached result for ${propertyKey} (TTL: ${ttl}s)`, {
-                    method: propertyKey,
                     cacheKey,
-                    ttl: `${ttl}s`,
                     cacheSize: globalCache.size(),
+                    method: propertyKey,
                     timestamp: new Date().toISOString(),
+                    ttl: `${ttl}s`,
                 });
 
                 return result;
             } catch (error) {
                 logger.error(`❌ Error in ${propertyKey}, not caching`, {
-                    method: propertyKey,
                     error: error instanceof Error ? error.message : String(error),
+                    method: propertyKey,
                     timestamp: new Date().toISOString(),
                 });
 

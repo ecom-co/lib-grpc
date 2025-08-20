@@ -18,22 +18,21 @@ export class GrpcModule {
     static forRoot(options: GrpcCoreModuleOptions = {}): DynamicModule {
         // Apply default values for safety, but respect user's isDevelopment setting
         const config: GrpcCoreModuleOptions = {
-            services: [],
-            host: 'localhost',
             basePort: 50051,
+            host: 'localhost',
             isDevelopment: options.isDevelopment ?? process.env.NODE_ENV === 'development',
             loaderOptions: {
+                defaults: true,
+                enums: String,
                 keepCase: true,
                 longs: String,
-                enums: String,
-                defaults: true,
                 oneofs: true,
             },
+            services: [],
             ...options,
         };
 
         return {
-            module: GrpcModule,
             providers: [
                 {
                     provide: 'GRPC_CORE_OPTIONS',
@@ -49,6 +48,7 @@ export class GrpcModule {
             ],
             exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, 'GRPC_CORE_OPTIONS'],
             global: true,
+            module: GrpcModule,
         };
     }
 
@@ -57,41 +57,40 @@ export class GrpcModule {
      * @param options - Async configuration factory options
      */
     static forRootAsync(options: {
-        useFactory: (...args: unknown[]) => Promise<GrpcCoreModuleOptions> | GrpcCoreModuleOptions;
-        inject?: string[];
         imports?: DynamicModule[];
+        inject?: string[];
+        useFactory: (...args: unknown[]) => GrpcCoreModuleOptions | Promise<GrpcCoreModuleOptions>;
     }): DynamicModule {
         return {
-            module: GrpcModule,
             imports: options.imports || [],
             providers: [
                 {
+                    inject: options.inject || [],
                     provide: 'GRPC_CORE_OPTIONS',
                     useFactory: async (...args: unknown[]) => {
                         const config = await options.useFactory(...args);
 
                         // Apply default values for safety, but respect user's isDevelopment setting
                         return {
-                            services: [],
-                            host: 'localhost',
                             basePort: 50051,
+                            host: 'localhost',
                             isDevelopment: config.isDevelopment ?? process.env.NODE_ENV === 'development',
                             loaderOptions: {
+                                defaults: true,
+                                enums: String,
                                 keepCase: true,
                                 longs: String,
-                                enums: String,
-                                defaults: true,
                                 oneofs: true,
                             },
+                            services: [],
                             ...config,
                         } as GrpcCoreModuleOptions;
                     },
-                    inject: options.inject || [],
                 },
                 {
+                    inject: ['GRPC_CORE_OPTIONS'],
                     provide: ServiceRegistry,
                     useFactory: (coreOptions: GrpcCoreModuleOptions) => new ServiceRegistry(coreOptions.services || []),
-                    inject: ['GRPC_CORE_OPTIONS'],
                 },
                 GrpcService,
                 GrpcServiceManager,
@@ -99,6 +98,7 @@ export class GrpcModule {
             ],
             exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, 'GRPC_CORE_OPTIONS'],
             global: true,
+            module: GrpcModule,
         };
     }
 }

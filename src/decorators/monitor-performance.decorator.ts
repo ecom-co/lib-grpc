@@ -1,17 +1,17 @@
 import { Logger } from '@nestjs/common';
 
 export interface MonitorPerformanceOptions {
-    threshold?: number; // ms
-    logger?: Logger;
     includeMemory?: boolean;
+    logger?: Logger;
+    threshold?: number; // ms
 }
 
 export interface PerformanceMetrics {
     duration: number;
     memory?: {
-        heapUsed: number;
-        heapTotal: number;
         external: number;
+        heapTotal: number;
+        heapUsed: number;
     };
 }
 
@@ -39,9 +39,9 @@ export const MonitorPerformance =
                     duration,
                     memory: startMemory
                         ? {
-                              heapUsed: process.memoryUsage().heapUsed - startMemory.heapUsed,
-                              heapTotal: process.memoryUsage().heapTotal,
                               external: process.memoryUsage().external - startMemory.external,
+                              heapTotal: process.memoryUsage().heapTotal,
+                              heapUsed: process.memoryUsage().heapUsed - startMemory.heapUsed,
                           }
                         : undefined,
                 };
@@ -66,9 +66,9 @@ export const MonitorPerformance =
                 const duration = Number(endTime - startTime) / 1_000_000;
 
                 logger.error(`❌ ${propertyKey} failed after ${duration.toFixed(2)}ms`, {
-                    method: propertyKey,
                     duration: `${duration.toFixed(2)}ms`,
                     error: error instanceof Error ? error.message : String(error),
+                    method: propertyKey,
                     timestamp: new Date().toISOString(),
                 });
 

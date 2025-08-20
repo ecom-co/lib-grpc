@@ -1,12 +1,12 @@
-import { Logger } from '@nestjs/common';
-
 import { randomUUID } from 'crypto';
 
+import { Logger } from '@nestjs/common';
+
 export interface TraceOperationOptions {
-    operationName?: string;
     includeArgs?: boolean;
     includeResult?: boolean;
     logger?: Logger;
+    operationName?: string;
 }
 
 /**
@@ -25,22 +25,23 @@ export const TraceOperation =
             const startTime = Date.now();
 
             logger.log(`🟢 [${traceId}] Starting ${operationName}`, {
-                traceId,
-                operation: operationName,
                 args: options.includeArgs ? args : '[hidden]',
+                operation: operationName,
                 timestamp: new Date().toISOString(),
+                traceId,
             });
 
             try {
                 const result = await originalMethod.apply(this, args);
 
                 const duration = Date.now() - startTime;
+
                 logger.log(`✅ [${traceId}] Completed ${operationName} in ${duration}ms`, {
-                    traceId,
-                    operation: operationName,
                     duration: `${duration}ms`,
+                    operation: operationName,
                     result: options.includeResult ? result : '[hidden]',
                     timestamp: new Date().toISOString(),
+                    traceId,
                 });
 
                 return result;
@@ -50,12 +51,12 @@ export const TraceOperation =
                 const errorStack = error instanceof Error ? error.stack : undefined;
 
                 logger.error(`❌ [${traceId}] Failed ${operationName} in ${duration}ms`, {
-                    traceId,
-                    operation: operationName,
                     duration: `${duration}ms`,
                     error: errorMessage,
+                    operation: operationName,
                     stack: errorStack,
                     timestamp: new Date().toISOString(),
+                    traceId,
                 });
 
                 throw error;

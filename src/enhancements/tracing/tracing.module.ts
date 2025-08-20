@@ -6,43 +6,43 @@ import { DistributedTracer, TracingOptions } from './distributed-tracer.service'
 export class TracingModule {
     static forRoot(options: TracingOptions): DynamicModule {
         return {
-            module: TracingModule,
             providers: [
                 {
                     provide: 'TRACING_OPTIONS',
                     useValue: options,
                 },
                 {
+                    inject: ['TRACING_OPTIONS'],
                     provide: DistributedTracer,
                     useFactory: (tracingOptions: TracingOptions) => new DistributedTracer(tracingOptions),
-                    inject: ['TRACING_OPTIONS'],
                 },
             ],
             exports: [DistributedTracer],
             global: true,
+            module: TracingModule,
         };
     }
 
     static forRootAsync(options: {
-        useFactory: (...args: unknown[]) => Promise<TracingOptions> | TracingOptions;
         inject?: string[];
+        useFactory: (...args: unknown[]) => Promise<TracingOptions> | TracingOptions;
     }): DynamicModule {
         return {
-            module: TracingModule,
             providers: [
                 {
+                    inject: options.inject || [],
                     provide: 'TRACING_OPTIONS',
                     useFactory: options.useFactory,
-                    inject: options.inject || [],
                 },
                 {
+                    inject: ['TRACING_OPTIONS'],
                     provide: DistributedTracer,
                     useFactory: (tracingOptions: TracingOptions) => new DistributedTracer(tracingOptions),
-                    inject: ['TRACING_OPTIONS'],
                 },
             ],
             exports: [DistributedTracer],
             global: true,
+            module: TracingModule,
         };
     }
 }

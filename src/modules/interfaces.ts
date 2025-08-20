@@ -1,6 +1,10 @@
+import type { DynamicModule, INestMicroservice, Type } from '@nestjs/common';
+
 /**
  * Configuration for individual gRPC service
  */
+export type AppModuleType = DynamicModule | Type<unknown>;
+
 export interface ServiceConfig {
     /** Unique name of the service */
     name: string;
@@ -16,6 +20,21 @@ export interface ServiceConfig {
     enabled?: boolean;
     /** Custom service metadata */
     metadata?: Record<string, unknown>;
+}
+
+/**
+ * Handle to a running gRPC server instance
+ */
+export interface RunningGrpcServer {
+    grpcApp: INestMicroservice;
+    host: string;
+    name: string;
+    package: string;
+    port: number;
+    protoPath: string;
+    startTime: Date;
+    status: 'running';
+    stop: () => Promise<void>;
 }
 
 /**
@@ -48,10 +67,10 @@ export interface GrpcServerOptions {
     connectionTimeout?: number;
     /** Enable SSL/TLS */
     ssl?: {
+        caFile?: string;
+        certFile?: string;
         enabled: boolean;
         keyFile?: string;
-        certFile?: string;
-        caFile?: string;
     };
     /** Custom interceptors */
     interceptors?: unknown[];
@@ -64,9 +83,9 @@ export interface GrpcLoaderOptions {
     /** Keep field names as-is (default: true) */
     keepCase?: boolean;
     /** Convert longs to strings (default: String) */
-    longs?: typeof String | typeof Number;
+    longs?: typeof Number | typeof String;
     /** Convert enums to strings (default: String) */
-    enums?: typeof String | typeof Number;
+    enums?: typeof Number | typeof String;
     /** Use default values (default: true) */
     defaults?: boolean;
     /** Handle oneofs (default: true) */
@@ -82,31 +101,31 @@ export interface ServiceRegistryOptions {
     /** Registry refresh interval in ms */
     refreshInterval?: number;
     /** Custom registry backend */
-    backend?: 'memory' | 'redis' | 'etcd';
+    backend?: 'etcd' | 'memory' | 'redis';
 }
 
 /**
  * Service runtime information
  */
 export interface ServiceInfo {
-    name: string;
     host: string;
-    port: number;
-    status: 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
+    metadata?: Record<string, unknown>;
+    name: string;
     package: string;
+    port: number;
     protoPath: string;
     startTime?: Date;
-    metadata?: Record<string, unknown>;
+    status: 'error' | 'running' | 'starting' | 'stopped' | 'stopping';
 }
 
 /**
  * Service health check response
  */
 export interface ServiceHealthResponse {
+    metadata?: Record<string, unknown>;
     service: string;
-    status: 'healthy' | 'unhealthy' | 'degraded';
+    status: 'degraded' | 'healthy' | 'unhealthy';
     timestamp: string;
     uptime?: number;
     version?: string;
-    metadata?: Record<string, unknown>;
 }

@@ -1,46 +1,46 @@
-import { Injectable, Logger } from '@nestjs/common';
-
 import { randomUUID } from 'crypto';
 
-export interface TraceSpan {
-    traceId: string;
-    spanId: string;
-    operationName: string;
-    startTime: bigint;
-    endTime?: bigint;
-    duration?: number;
-    status: 'active' | 'completed' | 'failed';
-    tags: Record<string, unknown>;
-    logs: TraceLog[];
-    parentSpanId?: string;
-}
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface TraceLog {
-    timestamp: number;
-    level: 'info' | 'warn' | 'error' | 'debug';
-    message: string;
     fields?: Record<string, unknown>;
+    level: 'debug' | 'error' | 'info' | 'warn';
+    message: string;
+    timestamp: number;
+}
+
+export interface TraceSpan {
+    duration?: number;
+    endTime?: bigint;
+    logs: TraceLog[];
+    operationName: string;
+    parentSpanId?: string;
+    spanId: string;
+    startTime: bigint;
+    status: 'active' | 'completed' | 'failed';
+    tags: Record<string, unknown>;
+    traceId: string;
 }
 
 export interface TracingOptions {
-    serviceName: string;
     enableSampling?: boolean;
-    samplingRate?: number; // 0.0 to 1.0
     maxSpans?: number;
+    samplingRate?: number; // 0.0 to 1.0
+    serviceName: string;
 }
 
 @Injectable()
 export class DistributedTracer {
-    private readonly logger = new Logger(DistributedTracer.name);
     private readonly activeSpans = new Map<string, TraceSpan>();
     private readonly completedSpans: TraceSpan[] = [];
+    private readonly logger = new Logger(DistributedTracer.name);
     private readonly options: Required<TracingOptions>;
 
     constructor(options: TracingOptions) {
         this.options = {
             enableSampling: true,
-            samplingRate: 1.0,
             maxSpans: 10000,
+            samplingRate: 1.0,
             ...options,
         };
     }
@@ -58,28 +58,28 @@ export class DistributedTracer {
         }
 
         const span: TraceSpan = {
-            traceId,
-            spanId,
+            status: 'active',
+            logs: [],
             operationName,
             startTime: process.hrtime.bigint(),
-            status: 'active',
             tags: {
                 'service.name': this.options.serviceName,
                 'span.kind': 'server',
                 ...tags,
             },
-            logs: [],
             parentSpanId,
+            spanId,
+            traceId,
         };
 
         this.activeSpans.set(spanId, span);
 
         this.logger.debug(`🟢 Started span: ${operationName}`, {
-            traceId,
-            spanId,
             operationName,
-            parentSpanId,
             tags,
+            parentSpanId,
+            spanId,
+            traceId,
         });
 
         return span;
@@ -90,8 +90,10 @@ export class DistributedTracer {
      */
     finishSpan(spanId: string, status: 'completed' | 'failed' = 'completed', tags: Record<string, unknown> = {}): void {
         const span = this.activeSpans.get(spanId);
+
         if (!span) {
             this.logger.warn(`Span not found: ${spanId}`);
+
             return;
         }
 
@@ -109,13 +111,14 @@ export class DistributedTracer {
         }
 
         const statusEmoji = status === 'completed' ? '✅' : '❌';
+
         this.logger.debug(`${statusEmoji} Finished span: ${span.operationName} (${span.duration?.toFixed(2)}ms)`, {
-            traceId: span.traceId,
-            spanId: span.spanId,
-            operationName: span.operationName,
-            duration: `${span.duration?.toFixed(2)}ms`,
             status,
+            duration: `${span.duration?.toFixed(2)}ms`,
+            operationName: span.operationName,
             tags: span.tags,
+            spanId: span.spanId,
+            traceId: span.traceId,
         });
     }
 
@@ -124,18 +127,19 @@ export class DistributedTracer {
      */
     addLog(
         spanId: string,
-        level: 'info' | 'warn' | 'error' | 'debug',
+        level: 'debug' | 'error' | 'info' | 'warn',
         message: string,
         fields?: Record<string, unknown>,
     ): void {
         const span = this.activeSpans.get(spanId);
+
         if (!span) return;
 
         span.logs.push({
-            timestamp: Date.now(),
+            fields,
             level,
             message,
-            fields,
+            timestamp: Date.now(),
         });
     }
 
@@ -144,6 +148,7 @@ export class DistributedTracer {
      */
     addTags(spanId: string, tags: Record<string, unknown>): void {
         const span = this.activeSpans.get(spanId);
+
         if (!span) return;
 
         span.tags = { ...span.tags, ...tags };
@@ -162,6 +167,7 @@ export class DistributedTracer {
     getTrace(traceId: string): TraceSpan[] {
         const activeSpans = Array.from(this.activeSpans.values()).filter((span) => span.traceId === traceId);
         const completedSpans = this.completedSpans.filter((span) => span.traceId === traceId);
+
         return [...activeSpans, ...completedSpans];
     }
 
@@ -171,9 +177,9 @@ export class DistributedTracer {
     getStats(): {
         activeSpans: number;
         completedSpans: number;
-        totalTraces: number;
-        serviceName: string;
         samplingRate: number;
+        serviceName: string;
+        totalTraces: number;
     } {
         const uniqueTraces = new Set([
             ...Array.from(this.activeSpans.values()).map((s) => s.traceId),
@@ -183,35 +189,36 @@ export class DistributedTracer {
         return {
             activeSpans: this.activeSpans.size,
             completedSpans: this.completedSpans.length,
-            totalTraces: uniqueTraces.size,
-            serviceName: this.options.serviceName,
             samplingRate: this.options.samplingRate,
+            serviceName: this.options.serviceName,
+            totalTraces: uniqueTraces.size,
         };
     }
 
     /**
      * Clear all spans (useful for testing)
      */
-    clear(): void {
-        this.activeSpans.clear();
-        this.completedSpans.length = 0;
-        this.logger.debug('🧹 Cleared all tracing data');
+    private createNoOpSpan(traceId: string, spanId: string, operationName: string): TraceSpan {
+        return {
+            status: 'active',
+            logs: [],
+            operationName,
+            startTime: process.hrtime.bigint(),
+            tags: {},
+            spanId,
+            traceId,
+        };
     }
 
     private getTraceId(spanId: string): string {
         const span = this.activeSpans.get(spanId);
+
         return span?.traceId || randomUUID();
     }
 
-    private createNoOpSpan(traceId: string, spanId: string, operationName: string): TraceSpan {
-        return {
-            traceId,
-            spanId,
-            operationName,
-            startTime: process.hrtime.bigint(),
-            status: 'active',
-            tags: {},
-            logs: [],
-        };
+    clear(): void {
+        this.activeSpans.clear();
+        this.completedSpans.length = 0;
+        this.logger.debug('🧹 Cleared all tracing data');
     }
 }

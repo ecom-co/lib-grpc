@@ -1,21 +1,21 @@
 export interface CircuitBreakerConfig {
-    failureThreshold: number;
-    recoveryTimeout: number;
-    monitoringPeriod: number;
     expectedErrors?: string[];
-}
-
-export interface CircuitBreakerState {
-    state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
-    failureCount: number;
-    nextAttempt: Date;
-    lastFailureTime?: Date;
+    failureThreshold: number;
+    monitoringPeriod: number;
+    recoveryTimeout: number;
 }
 
 export interface CircuitBreakerMetrics {
-    totalRequests: number;
-    successfulRequests: number;
-    failedRequests: number;
-    circuitOpenCount: number;
     averageResponseTime: number;
+    circuitOpenCount: number;
+    failedRequests: number;
+    successfulRequests: number;
+    totalRequests: number;
+}
+
+export interface CircuitBreakerState {
+    failureCount: number;
+    lastFailureTime?: Date;
+    nextAttempt: Date;
+    state: 'CLOSED' | 'HALF_OPEN' | 'OPEN';
 }

@@ -1,7 +1,10 @@
-import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
+import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
+
+import { validate, ValidationError } from 'class-validator';
 
 import { plainToClass } from 'class-transformer';
-import { validate, ValidationError } from 'class-validator';
+
+import { set } from 'lodash';
 
 import { GrpcValidationException } from '../exceptions/grpc-validation.exception';
 
@@ -22,7 +25,8 @@ export class GrpcValidationPipe implements PipeTransform<unknown> {
             errors.forEach((error: ValidationError) => {
                 if (error.constraints) {
                     const fieldName = error.property;
-                    fieldErrors[fieldName] = error.constraints;
+
+                    set(fieldErrors, fieldName, error.constraints);
 
                     Object.values(error.constraints).forEach((message) => {
                         validationErrors.push(`${fieldName}: ${message}`);
@@ -38,6 +42,7 @@ export class GrpcValidationPipe implements PipeTransform<unknown> {
 
     private toValidate(metatype: unknown): metatype is new (...args: unknown[]) => unknown {
         const types: unknown[] = [String, Boolean, Number, Array, Object];
+
         return !types.includes(metatype);
     }
 }

@@ -4,11 +4,11 @@ import { CircuitBreakerConfig, CircuitBreakerMetrics, CircuitBreakerState } from
 
 @Injectable()
 export class CircuitBreakerService {
-    private readonly logger = new Logger(CircuitBreakerService.name);
     private state: CircuitBreakerState;
     private readonly config: CircuitBreakerConfig;
+    private readonly logger = new Logger(CircuitBreakerService.name);
     private metrics: CircuitBreakerMetrics;
-    private readonly requests: Array<{ timestamp: Date; success: boolean; responseTime: number }> = [];
+    private readonly requests: Array<{ responseTime: number; success: boolean; timestamp: Date }> = [];
 
     constructor(config: CircuitBreakerConfig) {
         this.config = config;
@@ -18,12 +18,36 @@ export class CircuitBreakerService {
             nextAttempt: new Date(),
         };
         this.metrics = {
-            totalRequests: 0,
-            successfulRequests: 0,
-            failedRequests: 0,
-            circuitOpenCount: 0,
             averageResponseTime: 0,
+            circuitOpenCount: 0,
+            failedRequests: 0,
+            successfulRequests: 0,
+            totalRequests: 0,
         };
+    }
+
+    getMetrics(): CircuitBreakerMetrics {
+        return { ...this.metrics };
+    }
+
+    private getRecentRequests(): Array<{ responseTime: number; success: boolean; timestamp: Date }> {
+        const cutoffTime = new Date(Date.now() - this.config.monitoringPeriod);
+
+        return this.requests.filter((req) => req.timestamp > cutoffTime);
+    }
+
+    getState(): CircuitBreakerState {
+        return { ...this.state };
+    }
+
+    private updateAverageResponseTime(): void {
+        const recentRequests = this.getRecentRequests();
+
+        if (recentRequests.length > 0) {
+            const totalResponseTime = recentRequests.reduce((sum, req) => sum + req.responseTime, 0);
+
+            this.metrics.averageResponseTime = totalResponseTime / recentRequests.length;
+        }
     }
 
     async execute<T>(operation: () => Promise<T>): Promise<T> {
@@ -31,10 +55,12 @@ export class CircuitBreakerService {
             if (Date.now() < this.state.nextAttempt.getTime()) {
                 throw new Error('Circuit breaker is OPEN - requests blocked');
             }
+
             this.state.state = 'HALF_OPEN';
         }
 
         const startTime = Date.now();
+
         this.metrics.totalRequests++;
 
         try {
@@ -51,17 +77,10 @@ export class CircuitBreakerService {
             return result;
         } catch (error) {
             const responseTime = Date.now() - startTime;
+
             this.recordFailure(error as Error, responseTime);
             throw error;
         }
-    }
-
-    getState(): CircuitBreakerState {
-        return { ...this.state };
-    }
-
-    getMetrics(): CircuitBreakerMetrics {
-        return { ...this.metrics };
     }
 
     reset(): void {
@@ -73,21 +92,11 @@ export class CircuitBreakerService {
         this.logger.log('🔄 Circuit breaker reset to CLOSED');
     }
 
-    private recordSuccess(responseTime: number): void {
-        this.requests.push({
-            timestamp: new Date(),
-            success: true,
-            responseTime,
-        });
-        this.metrics.successfulRequests++;
-        this.updateAverageResponseTime();
-    }
-
     private recordFailure(error: Error, responseTime: number): void {
         this.requests.push({
-            timestamp: new Date(),
-            success: false,
             responseTime,
+            success: false,
+            timestamp: new Date(),
         });
         this.metrics.failedRequests++;
         this.updateAverageResponseTime();
@@ -109,16 +118,13 @@ export class CircuitBreakerService {
         }
     }
 
-    private updateAverageResponseTime(): void {
-        const recentRequests = this.getRecentRequests();
-        if (recentRequests.length > 0) {
-            const totalResponseTime = recentRequests.reduce((sum, req) => sum + req.responseTime, 0);
-            this.metrics.averageResponseTime = totalResponseTime / recentRequests.length;
-        }
-    }
-
-    private getRecentRequests(): Array<{ timestamp: Date; success: boolean; responseTime: number }> {
-        const cutoffTime = new Date(Date.now() - this.config.monitoringPeriod);
-        return this.requests.filter((req) => req.timestamp > cutoffTime);
+    private recordSuccess(responseTime: number): void {
+        this.requests.push({
+            responseTime,
+            success: true,
+            timestamp: new Date(),
+        });
+        this.metrics.successfulRequests++;
+        this.updateAverageResponseTime();
     }
 }

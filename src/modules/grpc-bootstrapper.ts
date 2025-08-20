@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { GrpcServiceManager } from './grpc-service-manager';
-import { ServiceConfig } from './interfaces';
+import { AppModuleType, ServiceConfig } from './interfaces';
 
 @Injectable()
 export class GrpcStarter {
@@ -14,7 +14,7 @@ export class GrpcStarter {
     /**
      * Set the app module for creating microservices
      */
-    setAppModule(appModule: any): void {
+    setAppModule(appModule: AppModuleType): void {
         this.grpcServiceManager.setAppModule(appModule);
     }
 
@@ -39,12 +39,12 @@ export class GrpcStarter {
         await this.grpcServiceManager.addService(config);
     }
 
-    async removeService(serviceName: string): Promise<void> {
-        await this.grpcServiceManager.removeService(serviceName);
-    }
-
     getRunningServices(): Array<{ name: string; port: number; status: string }> {
         return this.grpcServiceManager.getRunningServices();
+    }
+
+    async removeService(serviceName: string): Promise<void> {
+        await this.grpcServiceManager.removeService(serviceName);
     }
 
     isServiceRunning(serviceName: string): boolean {
