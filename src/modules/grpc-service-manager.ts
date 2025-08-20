@@ -8,6 +8,7 @@ import { toUpper } from 'lodash';
 
 import { GrpcOptions, Transport } from '@nestjs/microservices';
 
+import { GrpcConfigService } from './grpc-config.service';
 import { GrpcConfig, GrpcServerConfig, RunningGrpcServer } from './interfaces';
 import { ServiceRegistry } from './service-registry';
 
@@ -21,11 +22,12 @@ const normalizeServiceName = (serviceName: string): string => toUpper(serviceNam
 @Injectable()
 export class GrpcServiceManager {
     private app: NestApplication | null = null;
-    private basePort = 50051;
     private readonly logger = new Logger(GrpcServiceManager.name);
-    private readonly runningServices = new Map<string, { port: number; server: RunningGrpcServer }>();
 
-    constructor(private readonly serviceRegistry: ServiceRegistry) {
+    constructor(
+        private readonly serviceRegistry: ServiceRegistry,
+        private readonly configService: GrpcConfigService,
+    ) {
         this.logger.log('GrpcServiceManager initialized');
     }
 
@@ -68,7 +70,8 @@ export class GrpcServiceManager {
     async stopAllServices(): Promise<void> {
         this.logger.log('🛑 Stopping all gRPC services...');
 
-        const shutdownPromises = Array.from(this.runningServices.entries()).map(async ([serviceName]) => {
+        const runningServices = this.configService.getAllRunningServices();
+        const shutdownPromises = Object.entries(runningServices).map(async ([serviceName]) => {
             try {
                 await this.stopService(serviceName);
                 this.logger.log(`Service ${serviceName} stopped gracefully`);
@@ -83,12 +86,12 @@ export class GrpcServiceManager {
 
     private startService(config: GrpcServerConfig): void {
         const port = config.port || this.getNextAvailablePort();
-        const host = config.host || 'localhost';
+        const host = config.host || this.configService.getHost();
 
         try {
             const server = this.createGrpcServer(config, host, port);
 
-            this.runningServices.set(config.name, { port, server });
+            this.configService.addRunningService(config.name, port, server);
 
             this.logger.log(`Service '${config.name}' started at ${host}:${port}`);
             this.logger.debug(`Proto: ${config.protoPath}`);
@@ -101,7 +104,7 @@ export class GrpcServiceManager {
 
     private async stopService(serviceName: string): Promise<void> {
         const normalizedName = normalizeServiceName(serviceName);
-        const serviceInfo = this.runningServices.get(normalizedName);
+        const serviceInfo = this.configService.getRunningService(normalizedName);
 
         if (!serviceInfo) {
             this.logger.warn(`Service '${normalizedName}' not found in running services`);
@@ -111,7 +114,7 @@ export class GrpcServiceManager {
 
         try {
             await this.shutdownGrpcServer(serviceInfo.server);
-            this.runningServices.delete(normalizedName);
+            this.configService.removeRunningService(normalizedName);
 
             this.logger.log(`Service '${normalizedName}' stopped`);
         } catch (error) {
@@ -183,13 +186,16 @@ export class GrpcServiceManager {
     }
 
     private getNextAvailablePort(): number {
-        const usedPorts = Array.from(this.runningServices.values()).map((service) => service.port);
+        const basePort = this.configService.getBasePort();
+        const usedPorts = this.configService.getUsedPorts();
 
-        while (usedPorts.includes(this.basePort)) {
-            this.basePort++;
+        let nextPort = basePort;
+
+        while (usedPorts.includes(nextPort)) {
+            nextPort++;
         }
 
-        return this.basePort++;
+        return nextPort;
     }
 
     private async shutdownGrpcServer(server: RunningGrpcServer): Promise<void> {
@@ -210,11 +216,7 @@ export class GrpcServiceManager {
     }
 
     getRunningServices(): Array<{ name: string; port: number; status: string }> {
-        return Array.from(this.runningServices.entries()).map(([name, { port }]) => ({
-            name,
-            status: 'running',
-            port,
-        }));
+        return this.configService.getRunningServicesList();
     }
 
     async removeService(serviceName: string): Promise<void> {
@@ -227,6 +229,6 @@ export class GrpcServiceManager {
     isServiceRunning(serviceName: string): boolean {
         const normalizedName = normalizeServiceName(serviceName);
 
-        return this.runningServices.has(normalizedName);
+        return this.configService.isServiceRunning(normalizedName);
     }
 }

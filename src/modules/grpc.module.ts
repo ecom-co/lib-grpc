@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DynamicModule, Module } from '@nestjs/common';
 
+import { GrpcConfigService } from './grpc-config.service';
 import { GrpcServiceManager } from './grpc-service-manager';
 import { GrpcStarter } from './grpc-starter';
 import { GrpcService } from './grpc.service';
-import { GrpcCoreModuleOptions } from './interfaces';
+import { GrpcConfig, GrpcCoreModuleOptions } from './interfaces';
 import { ServiceRegistry } from './service-registry';
 
 /**
@@ -12,6 +13,15 @@ import { ServiceRegistry } from './service-registry';
  */
 @Module({})
 export class GrpcModule {
+    private static configs: GrpcConfig[] = [];
+
+    /**
+     * Get all gRPC configurations
+     */
+    static getConfigs(): GrpcConfig[] {
+        return this.configs;
+    }
+
     /**
      * Configure gRPC module with static options
      * @param options - Configuration options for gRPC services
@@ -33,21 +43,31 @@ export class GrpcModule {
             ...options,
         };
 
+        // Store configs for later access
+        this.configs = config.configs || [];
+
         return {
             providers: [
                 {
-                    provide: 'GRPC_CORE_OPTIONS',
-                    useValue: config,
+                    provide: GrpcConfigService,
+                    useFactory: () => {
+                        const configService = new GrpcConfigService();
+
+                        configService.setOptions(config);
+
+                        return configService;
+                    },
                 },
                 {
+                    inject: [GrpcConfigService],
                     provide: ServiceRegistry,
-                    useFactory: () => new ServiceRegistry(config.configs || []),
+                    useFactory: (configService: GrpcConfigService) => new ServiceRegistry(configService.getConfigs()),
                 },
                 GrpcService,
                 GrpcServiceManager,
                 GrpcStarter,
             ],
-            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, 'GRPC_CORE_OPTIONS'],
+            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, GrpcConfigService],
             global: true,
             module: GrpcModule,
         };
@@ -67,12 +87,12 @@ export class GrpcModule {
             providers: [
                 {
                     inject: options.inject || [],
-                    provide: 'GRPC_CORE_OPTIONS',
+                    provide: GrpcConfigService,
                     useFactory: async (...args: TArgs) => {
                         const config = await options.useFactory(...args);
 
                         // Apply default values for safety, but respect user's isDevelopment setting
-                        return {
+                        const finalConfig = {
                             basePort: 50051,
                             configs: [],
                             host: 'localhost',
@@ -86,18 +106,27 @@ export class GrpcModule {
                             },
                             ...config,
                         } as GrpcCoreModuleOptions;
+
+                        // Store configs for later access
+                        GrpcModule.configs = finalConfig.configs || [];
+
+                        const configService = new GrpcConfigService();
+
+                        configService.setOptions(finalConfig);
+
+                        return configService;
                     },
                 },
                 {
-                    inject: ['GRPC_CORE_OPTIONS'],
+                    inject: [GrpcConfigService],
                     provide: ServiceRegistry,
-                    useFactory: (coreOptions: GrpcCoreModuleOptions) => new ServiceRegistry(coreOptions.configs || []),
+                    useFactory: (configService: GrpcConfigService) => new ServiceRegistry(configService.getConfigs()),
                 },
                 GrpcService,
                 GrpcServiceManager,
                 GrpcStarter,
             ],
-            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, 'GRPC_CORE_OPTIONS'],
+            exports: [GrpcService, ServiceRegistry, GrpcServiceManager, GrpcStarter, GrpcConfigService],
             global: true,
             module: GrpcModule,
         };

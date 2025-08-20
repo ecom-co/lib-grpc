@@ -5,7 +5,8 @@
 ## ✨ Key Features
 
 ### 🎯 **Core Modules**
-- **GrpcModule**: Configure and manage gRPC services & clients
+- **GrpcModule**: Configure and manage gRPC services & clients with centralized config
+- **GrpcConfigService**: Centralized configuration and runtime state management
 - **ServiceRegistry**: Dynamic service configuration management with auto uppercase
 - **GrpcStarter**: Manual lifecycle management with graceful shutdown
 - **GrpcServiceManager**: Hybrid gRPC service orchestration
@@ -23,6 +24,7 @@
 - **Hybrid Architecture**: Single app instance for HTTP + gRPC
 - **Discriminated Union Types**: Type-safe server/client configurations
 - **Auto Uppercase**: Consistent naming with automatic normalization
+- **Centralized Configuration**: Single source of truth for all configs and runtime state
 - **Exception Handling**: gRPC-specific error handling + filters
 - **Validation**: Type-safe request validation pipes
 - **Clean Logging**: Professional, emoji-free logging system
@@ -82,7 +84,7 @@ export class AppModule {}
 ```typescript
 // main.ts
 import { NestFactory } from '@nestjs/core';
-import { GrpcStarter, GrpcClientFactory } from '@ecom-co/grpc';
+import { GrpcStarter, GrpcClientFactory, GrpcConfigService } from '@ecom-co/grpc';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -96,7 +98,8 @@ async function bootstrap() {
   starter.start();
   
   // Initialize all gRPC clients
-  const configs = app.get('GRPC_CORE_OPTIONS').configs;
+  const configService = app.get(GrpcConfigService);
+  const configs = configService.getConfigs();
   await GrpcClientFactory.initializeClients(configs);
   
   // Start HTTP server (gRPC services already connected)
@@ -124,9 +127,14 @@ interface UserService {
 
 @Injectable()
 export class UserService {
-  // Auto injects 'ORDER-CLIENT' (normalized to uppercase)
+  // Method 1: Property injection (auto injects 'ORDER-CLIENT')
   @GrpcClient('order-client')
   private orderClient!: ClientProxy;
+
+  // Method 2: Constructor injection (recommended)
+  constructor(
+    @GrpcClient('order-client') private readonly orderClient: ClientProxy
+  ) {}
 
   async getUser(id: string) {
     const orderSvc = this.orderClient.getService<UserService>('OrderService');
@@ -197,6 +205,33 @@ export class UserService {
 ```
 
 ## 🔧 Advanced Features
+
+### **Centralized Configuration with GrpcConfigService**
+
+```typescript
+// Access all configurations and runtime state from one service
+@Injectable()
+export class MyService {
+  constructor(private readonly configService: GrpcConfigService) {}
+
+  async someMethod() {
+    // Get all configurations
+    const allConfigs = this.configService.getConfigs();
+    const serverConfigs = this.configService.getServerConfigs();
+    const clientConfigs = this.configService.getClientConfigs();
+    
+    // Get runtime state
+    const runningServices = this.configService.getRunningServicesList();
+    const usedPorts = this.configService.getUsedPorts();
+    const isServiceRunning = this.configService.isServiceRunning('USER-SERVICE');
+    
+    // Get configuration options
+    const basePort = this.configService.getBasePort();
+    const host = this.configService.getHost();
+    const isDev = this.configService.isDevelopment();
+  }
+}
+```
 
 ### **Type-Safe Configuration with Discriminated Union**
 
@@ -327,6 +362,7 @@ async getUserById(id: string) {
 @ecom-co/grpc/
 ├── modules/           # Core gRPC functionality
 │   ├── grpc.module.ts              # Main module with configs
+│   ├── grpc-config.service.ts      # Centralized config & runtime state
 │   ├── grpc.service.ts             # Core service
 │   ├── service-registry.ts         # Dynamic config with auto uppercase
 │   ├── grpc-starter.ts             # Manual startup control
@@ -373,10 +409,11 @@ starter.start(); // Connects to main app
 1. **Hybrid Architecture**: Single app instance for HTTP + gRPC (no conflicts)
 2. **Auto Uppercase**: Consistent naming prevents errors
 3. **Type Safety**: Use discriminated union types for configs
-4. **Client Management**: Use `@GrpcClient()` decorator for clean injection
-5. **Performance**: Monitor memory usage in `@MonitorPerformance`
-6. **Exception Handling**: Use proper gRPC exception types
-7. **Service Management**: Use `GrpcStarter` for manual lifecycle control
+4. **Centralized Config**: Use `GrpcConfigService` for all config and runtime state
+5. **Client Management**: Use `@GrpcClient()` decorator for clean injection
+6. **Performance**: Monitor memory usage in `@MonitorPerformance`
+7. **Exception Handling**: Use proper gRPC exception types
+8. **Service Management**: Use `GrpcStarter` for manual lifecycle control
 
 ## 📝 Development
 
