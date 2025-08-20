@@ -1,33 +1,32 @@
 # @ecom-co/grpc
 
-🚀 **Modern gRPC Library** for NestJS with hybrid architecture, discriminated union types, and production-ready features.
+🚀 **Modern gRPC Library** for NestJS with hybrid architecture, type-safe configurations, and production-ready features.
 
 ## ✨ Key Features
 
-### 🎯 **Core Modules**
-- **GrpcModule**: Configure and manage gRPC services & clients with centralized config
+### 🎯 **Core Components**
+- **GrpcModule**: Main module for configuring gRPC services & clients
 - **GrpcConfigService**: Centralized configuration and runtime state management
-- **ServiceRegistry**: Dynamic service configuration management with auto uppercase
+- **ServiceRegistry**: Dynamic service registration with auto-uppercase naming
 - **GrpcStarter**: Manual lifecycle management with graceful shutdown
 - **GrpcServiceManager**: Hybrid gRPC service orchestration
 - **GrpcClientFactory**: Client connection management
 - **GrpcClientModule**: Feature-based client providers
 
 ### 🎨 **Smart Decorators** 
-- **@GrpcClient()**: Inject gRPC clients by name with auto uppercase
-- **@TraceOperation**: UUID tracing with structured logging
-- **@MonitorPerformance**: Real-time performance monitoring + memory tracking
+- **@GrpcClient()**: Inject gRPC clients by name with auto-uppercase
+- **@TraceOperation**: Request tracing with UUID
+- **@MonitorPerformance**: Performance monitoring with memory tracking
 - **@Cacheable**: TTL-based method result caching
 - **@EnhancedOperation**: All-in-one decorator (tracing + performance + cache)
 
-### 🔧 **Production Enhancements**
+### 🔧 **Production Features**
 - **Hybrid Architecture**: Single app instance for HTTP + gRPC
-- **Discriminated Union Types**: Type-safe server/client configurations
-- **Auto Uppercase**: Consistent naming with automatic normalization
+- **Type-Safe Configurations**: Discriminated union types for server/client configs
+- **Auto-Uppercase Naming**: Consistent naming with automatic normalization
 - **Centralized Configuration**: Single source of truth for all configs and runtime state
-- **Exception Handling**: gRPC-specific error handling + filters
+- **Exception Handling**: gRPC-specific error handling and filters
 - **Validation**: Type-safe request validation pipes
-- **Clean Logging**: Professional, emoji-free logging system
 
 ## 📦 Installation
 
@@ -43,12 +42,13 @@ npm install @ecom-co/grpc
 
 ## 🚀 Quick Start
 
-### 1. **App Module Setup with Discriminated Union Types**
+### 1. **Configure App Module**
 
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { GrpcModule, GrpcClientModule, GrpcConfig } from '@ecom-co/grpc';
+import { GrpcModule, GrpcConfig } from '@ecom-co/grpc';
+import { UserModule } from './user/user.module';
 
 const configs: GrpcConfig[] = [
   // Server configuration
@@ -73,13 +73,13 @@ const configs: GrpcConfig[] = [
 @Module({
   imports: [
     GrpcModule.forRoot({ configs }),
-    GrpcClientModule.forFeature(['order-client']) // Auto creates providers
+    UserModule
   ]
 })
 export class AppModule {}
 ```
 
-### 2. **Main.ts Bootstrap with Hybrid Approach**
+### 2. **Bootstrap Application**
 
 ```typescript
 // main.ts
@@ -112,41 +112,78 @@ async function bootstrap() {
 bootstrap();
 ```
 
-### 3. **Service Implementation with @GrpcClient Decorator**
+### 3. **Use gRPC Clients in Feature Modules**
 
 ```typescript
-// user.service.ts
+// user/user.module.ts
+import { Module } from '@nestjs/common';
+import { GrpcClientModule } from '@ecom-co/grpc';
+import { UserService } from './user.service';
+import { UserController } from './user.controller';
+
+@Module({
+  imports: [
+    // REQUIRED: Create providers for clients you want to use
+    GrpcClientModule.forFeature(['order-client'])
+  ],
+  providers: [UserService],
+  controllers: [UserController]
+})
+export class UserModule {}
+```
+
+```typescript
+// user/user.service.ts
 import { Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { GrpcClient } from '@ecom-co/grpc';
 
-interface UserService {
-  GetUser(data: { id: string }): any;
+interface OrderService {
+  GetOrder(data: { id: string }): any;
+  CreateOrder(data: { userId: string; items: any[] }): any;
 }
 
 @Injectable()
 export class UserService {
-  // Method 1: Property injection (auto injects 'ORDER-CLIENT')
-  @GrpcClient('order-client')
-  private orderClient!: ClientProxy;
-
-  // Method 2: Constructor injection (recommended)
   constructor(
+    // Inject the client (auto-uppercase: 'order-client' → 'ORDER-CLIENT')
     @GrpcClient('order-client') private readonly orderClient: ClientProxy
   ) {}
 
-  async getUser(id: string) {
-    const orderSvc = this.orderClient.getService<UserService>('OrderService');
-    return firstValueFrom(orderSvc.GetUser({ id }));
+  async getUserWithOrders(userId: string) {
+    // Get user data
+    const user = await this.getUserById(userId);
+    
+    // Call order service
+    const orderService = this.orderClient.getService<OrderService>('OrderService');
+    
+    try {
+      const orders = await firstValueFrom(
+        orderService.GetOrder({ id: userId })
+      );
+      
+      return {
+        ...user,
+        orders
+      };
+    } catch (error) {
+      console.error('Failed to get orders:', error);
+      return user;
+    }
+  }
+
+  private async getUserById(id: string) {
+    // Your user logic here
+    return { id, name: 'John Doe' };
   }
 }
 ```
 
-### 4. **Advanced Service with All Decorators**
+### 4. **Advanced Service with Decorators**
 
 ```typescript
-// user.service.ts
+// user/user.service.ts
 import { Injectable } from '@nestjs/common';
 import { 
   TraceOperation, 
@@ -158,7 +195,7 @@ import {
 @Injectable()
 export class UserService {
   
-  // Tracing only with UUID
+  // Request tracing
   @TraceOperation({ 
     operationName: 'getUserById',
     includeArgs: true,
@@ -166,7 +203,7 @@ export class UserService {
   })
   async getUserById(id: string) {
     // Logic here
-    return user;
+    return { id, name: 'John Doe' };
   }
 
   // Performance monitoring
@@ -174,9 +211,9 @@ export class UserService {
     threshold: 1000, // warn if > 1s
     includeMemory: true 
   })
-  async updateUser(id: string, data: UpdateUserDto) {
+  async updateUser(id: string, data: any) {
     // Logic here
-    return updatedUser;
+    return { id, ...data };
   }
 
   // Method result caching  
@@ -186,7 +223,7 @@ export class UserService {
   })
   async getAllUsers() {
     // Expensive operation
-    return users;
+    return [{ id: '1', name: 'John' }];
   }
 
   // All-in-one decorator
@@ -197,16 +234,16 @@ export class UserService {
     performanceThreshold: 2000,
     includeArgs: true
   })
-  async createUser(userData: CreateUserDto) {
+  async createUser(userData: any) {
     // Auto: tracing + performance + caching
-    return newUser;
+    return { id: 'new-id', ...userData };
   }
 }
 ```
 
 ## 🔧 Advanced Features
 
-### **Centralized Configuration with GrpcConfigService**
+### **Centralized Configuration**
 
 ```typescript
 // Access all configurations and runtime state from one service
@@ -215,7 +252,7 @@ export class MyService {
   constructor(private readonly configService: GrpcConfigService) {}
 
   async someMethod() {
-    // Get all configurations
+    // Get configurations
     const allConfigs = this.configService.getConfigs();
     const serverConfigs = this.configService.getServerConfigs();
     const clientConfigs = this.configService.getClientConfigs();
@@ -233,7 +270,7 @@ export class MyService {
 }
 ```
 
-### **Type-Safe Configuration with Discriminated Union**
+### **Type-Safe Configuration**
 
 ```typescript
 // TypeScript knows exactly which fields are available
@@ -255,7 +292,7 @@ const clientConfig: GrpcClientConfig = {
 };
 ```
 
-### **Auto Uppercase Naming**
+### **Auto-Uppercase Naming**
 
 ```typescript
 // All names are automatically normalized to uppercase
@@ -280,7 +317,6 @@ import {
   GrpcExceptionFilter
 } from '@ecom-co/grpc';
 
-// Custom exceptions
 @Injectable()
 export class UserService {
   async getUserById(id: string) {
@@ -295,17 +331,6 @@ export class UserService {
     
     return user;
   }
-
-  async createUser(dto: CreateUserDto) {
-    // Validation errors
-    const errors = await validate(dto);
-    if (errors.length > 0) {
-      throw new GrpcValidationException(
-        errors.map(e => Object.values(e.constraints).join(', ')),
-        { fieldErrors: errors }
-      );
-    }
-  }
 }
 
 // Global exception filter
@@ -318,15 +343,9 @@ export class UserController {
 
 ## 📊 Observability & Monitoring
 
-### **Performance Metrics**
+### **Performance Monitoring**
 
 ```typescript
-// Decorator automatically tracks:
-// - Execution time (ms)
-// - Memory usage delta  
-// - Success/failure rates
-// - Cache hit/miss rates
-
 @MonitorPerformance({ threshold: 500 })
 async heavyOperation() {
   // Output when > threshold:
@@ -407,13 +426,14 @@ starter.start(); // Connects to main app
 ## 📈 Production Tips
 
 1. **Hybrid Architecture**: Single app instance for HTTP + gRPC (no conflicts)
-2. **Auto Uppercase**: Consistent naming prevents errors
+2. **Auto-Uppercase**: Consistent naming prevents errors
 3. **Type Safety**: Use discriminated union types for configs
 4. **Centralized Config**: Use `GrpcConfigService` for all config and runtime state
 5. **Client Management**: Use `@GrpcClient()` decorator for clean injection
-6. **Performance**: Monitor memory usage in `@MonitorPerformance`
-7. **Exception Handling**: Use proper gRPC exception types
-8. **Service Management**: Use `GrpcStarter` for manual lifecycle control
+6. **Module Import**: Always import `GrpcClientModule.forFeature()` in modules that use clients
+7. **Performance**: Monitor memory usage in `@MonitorPerformance`
+8. **Exception Handling**: Use proper gRPC exception types
+9. **Service Management**: Use `GrpcStarter` for manual lifecycle control
 
 ## 📝 Development
 
