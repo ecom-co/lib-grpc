@@ -40,36 +40,23 @@ export class GrpcMicroserviceFactory {
             transport: Transport.GRPC,
         };
 
-        // Connect microservice
-        const microservice = app.connectMicroservice(grpcOptions);
-
-        // Apply global middleware BEFORE starting
+        // Apply global middleware to options BEFORE connecting
         if (globalMiddleware) {
-            if (globalMiddleware.pipes?.length) {
-                globalMiddleware.pipes.forEach((pipe) => {
-                    microservice.useGlobalPipes(pipe);
-                });
-            }
+            // Add middleware to options directly
+            const enhancedOptions = grpcOptions as GrpcOptions & {
+                filters?: ExceptionFilter[];
+                guards?: CanActivate[];
+                interceptors?: NestInterceptor[];
+                pipes?: PipeTransform[];
+            };
 
-            if (globalMiddleware.filters?.length) {
-                globalMiddleware.filters.forEach((filter) => {
-                    microservice.useGlobalFilters(filter);
-                });
-            }
-
-            if (globalMiddleware.interceptors?.length) {
-                globalMiddleware.interceptors.forEach((interceptor) => {
-                    microservice.useGlobalInterceptors(interceptor);
-                });
-            }
-
-            if (globalMiddleware.guards?.length) {
-                globalMiddleware.guards.forEach((guard) => {
-                    microservice.useGlobalGuards(guard);
-                });
-            }
+            enhancedOptions.pipes = globalMiddleware.pipes || [];
+            enhancedOptions.filters = globalMiddleware.filters || [];
+            enhancedOptions.interceptors = globalMiddleware.interceptors || [];
+            enhancedOptions.guards = globalMiddleware.guards || [];
         }
 
-        return microservice;
+        // Connect microservice with middleware already configured
+        return app.connectMicroservice(grpcOptions);
     }
 }
