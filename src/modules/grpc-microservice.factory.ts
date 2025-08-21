@@ -40,23 +40,36 @@ export class GrpcMicroserviceFactory {
             transport: Transport.GRPC,
         };
 
-        // Apply global middleware to options BEFORE connecting
-        if (globalMiddleware) {
-            // Add middleware to options directly
-            const enhancedOptions = grpcOptions as GrpcOptions & {
-                filters?: ExceptionFilter[];
-                guards?: CanActivate[];
-                interceptors?: NestInterceptor[];
-                pipes?: PipeTransform[];
-            };
+        // Connect microservice first
+        const microservice = app.connectMicroservice(grpcOptions);
 
-            enhancedOptions.pipes = globalMiddleware.pipes || [];
-            enhancedOptions.filters = globalMiddleware.filters || [];
-            enhancedOptions.interceptors = globalMiddleware.interceptors || [];
-            enhancedOptions.guards = globalMiddleware.guards || [];
+        // Apply global middleware AFTER connecting but BEFORE starting
+        if (globalMiddleware) {
+            if (globalMiddleware.pipes?.length) {
+                globalMiddleware.pipes.forEach((pipe) => {
+                    microservice.useGlobalPipes(pipe);
+                });
+            }
+
+            if (globalMiddleware.filters?.length) {
+                globalMiddleware.filters.forEach((filter) => {
+                    microservice.useGlobalFilters(filter);
+                });
+            }
+
+            if (globalMiddleware.interceptors?.length) {
+                globalMiddleware.interceptors.forEach((interceptor) => {
+                    microservice.useGlobalInterceptors(interceptor);
+                });
+            }
+
+            if (globalMiddleware.guards?.length) {
+                globalMiddleware.guards.forEach((guard) => {
+                    microservice.useGlobalGuards(guard);
+                });
+            }
         }
 
-        // Connect microservice with middleware already configured
-        return app.connectMicroservice(grpcOptions);
+        return microservice;
     }
 }
