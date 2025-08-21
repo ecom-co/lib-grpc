@@ -4,6 +4,8 @@ export * from './grpc-client.factory';
 
 export * from './grpc-config.service';
 
+export * from './grpc-microservice.factory';
+
 export * from './grpc-service-manager';
 
 export * from './grpc-starter';
