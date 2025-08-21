@@ -34,6 +34,10 @@ export class GrpcConfigService {
         return get(this.options, 'configs', []);
     }
 
+    getGlobalOptions(): GrpcCoreModuleOptions {
+        return this.options;
+    }
+
     getHost(): string {
         return get(this.options, 'host', 'localhost');
     }

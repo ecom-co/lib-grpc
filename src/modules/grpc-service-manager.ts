@@ -2,7 +2,15 @@ import { join } from 'path';
 
 import { NestApplication } from '@nestjs/core';
 
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    CanActivate,
+    ExceptionFilter,
+    INestMicroservice,
+    Injectable,
+    Logger,
+    NestInterceptor,
+    PipeTransform,
+} from '@nestjs/common';
 
 import { toUpper } from 'lodash';
 
@@ -146,6 +154,9 @@ export class GrpcServiceManager {
         // Connect microservice to main app (hybrid approach)
         const microservice = this.app.connectMicroservice(microserviceOptions);
 
+        // Apply global middleware to the microservice
+        this.applyGlobalMiddleware(microservice);
+
         this.logger.log(`gRPC server connected for ${config.name} at ${host}:${port}`);
 
         return {
@@ -199,6 +210,53 @@ export class GrpcServiceManager {
         }
 
         return nextPort;
+    }
+
+    /**
+     * Apply global middleware to gRPC microservice
+     */
+    private applyGlobalMiddleware(microservice: INestMicroservice): void {
+        const globalOptions = this.configService.getGlobalOptions();
+
+        if (!globalOptions) {
+            return;
+        }
+
+        // Apply global pipes
+        if (globalOptions.globalMiddleware?.pipes?.length) {
+            this.logger.debug(`Applying ${globalOptions.globalMiddleware.pipes.length} global pipes to gRPC service`);
+            globalOptions.globalMiddleware.pipes.forEach((pipe: PipeTransform) => {
+                microservice.useGlobalPipes(pipe);
+            });
+        }
+
+        // Apply global filters
+        if (globalOptions.globalMiddleware?.filters?.length) {
+            this.logger.debug(
+                `Applying ${globalOptions.globalMiddleware.filters.length} global filters to gRPC service`,
+            );
+            globalOptions.globalMiddleware.filters.forEach((filter: ExceptionFilter) => {
+                microservice.useGlobalFilters(filter);
+            });
+        }
+
+        // Apply global interceptors
+        if (globalOptions.globalMiddleware?.interceptors?.length) {
+            this.logger.debug(
+                `Applying ${globalOptions.globalMiddleware.interceptors.length} global interceptors to gRPC service`,
+            );
+            globalOptions.globalMiddleware.interceptors.forEach((interceptor: NestInterceptor) => {
+                microservice.useGlobalInterceptors(interceptor);
+            });
+        }
+
+        // Apply global guards
+        if (globalOptions.globalMiddleware?.guards?.length) {
+            this.logger.debug(`Applying ${globalOptions.globalMiddleware.guards.length} global guards to gRPC service`);
+            globalOptions.globalMiddleware.guards.forEach((guard: CanActivate) => {
+                microservice.useGlobalGuards(guard);
+            });
+        }
     }
 
     private async shutdownGrpcServer(server: RunningGrpcServer): Promise<void> {

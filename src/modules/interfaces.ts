@@ -1,4 +1,12 @@
-import type { DynamicModule, INestMicroservice, Type } from '@nestjs/common';
+import type {
+    CanActivate,
+    DynamicModule,
+    ExceptionFilter,
+    INestMicroservice,
+    NestInterceptor,
+    PipeTransform,
+    Type,
+} from '@nestjs/common';
 
 /**
  * Server configuration for hosting gRPC services
@@ -83,6 +91,17 @@ export interface GrpcCoreModuleOptions {
     isDevelopment?: boolean;
     /** Custom service registry options */
     registryOptions?: ServiceRegistryOptions;
+    /** Global middleware for all gRPC services */
+    globalMiddleware?: {
+        /** Global pipes for validation and transformation */
+        pipes?: PipeTransform[];
+        /** Global filters for exception handling */
+        filters?: ExceptionFilter[];
+        /** Global interceptors for cross-cutting concerns */
+        interceptors?: NestInterceptor[];
+        /** Global guards for access control */
+        guards?: CanActivate[];
+    };
 }
 
 /**
@@ -101,7 +120,13 @@ export interface GrpcServerOptions {
         keyFile?: string;
     };
     /** Custom interceptors */
-    interceptors?: unknown[];
+    interceptors?: NestInterceptor[];
+    /** Global pipes for validation and transformation */
+    pipes?: PipeTransform[];
+    /** Global filters for exception handling */
+    filters?: ExceptionFilter[];
+    /** Global guards for access control */
+    guards?: CanActivate[];
 }
 
 /**
