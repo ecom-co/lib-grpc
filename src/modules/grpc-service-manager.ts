@@ -51,12 +51,14 @@ export class GrpcServiceManager {
      * Manually start all registered gRPC services
      */
     async startAllServices(): Promise<void> {
-        this.logger.log('Starting gRPC services...');
+        this.logger.log('🚀 Starting all gRPC services...');
 
         const services = this.serviceRegistry.getServers();
 
+        this.logger.log(`Found ${services.length} gRPC services to start`);
+
         if (services.length === 0) {
-            this.logger.warn('No gRPC services found to start');
+            this.logger.warn('⚠️ No gRPC services found to start');
 
             return;
         }
@@ -65,14 +67,20 @@ export class GrpcServiceManager {
             throw new Error('Main app is required to start gRPC services');
         }
 
+        this.logger.log('📋 Services to start:');
+        services.forEach((service, index) => {
+            this.logger.log(`  ${index + 1}. ${service.name} (${service.package})`);
+        });
+
         for (const service of services) {
             this.startService(service);
         }
 
         // Start all connected microservices to ensure they listen on their ports
+        this.logger.log('🔄 Starting all microservices...');
         await this.app.startAllMicroservices();
 
-        this.logger.log(`Successfully started ${services.length} gRPC services`);
+        this.logger.log(`🎉 Successfully started ${services.length} gRPC services`);
     }
 
     /**
@@ -99,16 +107,19 @@ export class GrpcServiceManager {
         const port = config.port || this.getNextAvailablePort();
         const host = config.host || this.configService.getHost();
 
+        this.logger.log(`🔧 Starting service: ${config.name}`);
+        this.logger.log(`Port: ${port}, Host: ${host}`);
+
         try {
             const server = this.createGrpcServer(config, host, port);
 
             this.configService.addRunningService(config.name, port, server);
 
-            this.logger.log(`Service '${config.name}' started at ${host}:${port}`);
-            this.logger.debug(`Proto: ${config.protoPath}`);
-            this.logger.debug(`Package: ${config.package}`);
+            this.logger.log(`✅ Service '${config.name}' started successfully at ${host}:${port}`);
+            this.logger.log(`Proto: ${config.protoPath}`);
+            this.logger.log(`Package: ${config.package}`);
         } catch (error) {
-            this.logger.error(`Failed to start service '${config.name}':`, error);
+            this.logger.error(`❌ Failed to start service '${config.name}':`, error);
             throw error;
         }
     }
@@ -138,11 +149,11 @@ export class GrpcServiceManager {
      * Connect gRPC microservice to main app (hybrid approach)
      */
     private createGrpcServer(config: GrpcServerConfig, host: string, port: number): RunningGrpcServer {
-        this.logger.debug(`Creating gRPC server for ${config.name}...`);
-        this.logger.debug(`Host: ${host}`);
-        this.logger.debug(`Port: ${port}`);
-        this.logger.debug(`Proto: ${config.protoPath}`);
-        this.logger.debug(`Package: ${config.package}`);
+        this.logger.log(`🚀 Creating gRPC server for ${config.name}...`);
+        this.logger.log(`Host: ${host}`);
+        this.logger.log(`Port: ${port}`);
+        this.logger.log(`Proto: ${config.protoPath}`);
+        this.logger.log(`Package: ${config.package}`);
 
         if (!this.app) {
             throw new Error('Main app is required to create gRPC services');
@@ -154,10 +165,12 @@ export class GrpcServiceManager {
         // Connect microservice to main app (hybrid approach)
         const microservice = this.app.connectMicroservice(microserviceOptions);
 
+        this.logger.log(`✅ gRPC microservice connected for ${config.name}`);
+
         // Apply global middleware to the microservice
         this.applyGlobalMiddleware(microservice);
 
-        this.logger.log(`gRPC server connected for ${config.name} at ${host}:${port}`);
+        this.logger.log(`🎉 gRPC server fully configured for ${config.name} at ${host}:${port}`);
 
         return {
             name: config.name,
@@ -218,45 +231,72 @@ export class GrpcServiceManager {
     private applyGlobalMiddleware(microservice: INestMicroservice): void {
         const globalOptions = this.configService.getGlobalOptions();
 
+        this.logger.log('🔧 Applying global middleware to gRPC service...');
+        this.logger.log('Global options:', JSON.stringify(globalOptions, null, 2));
+
         if (!globalOptions) {
+            this.logger.warn('No global options found');
+
+            return;
+        }
+
+        if (!globalOptions.globalMiddleware) {
+            this.logger.warn('No global middleware configuration found');
+
             return;
         }
 
         // Apply global pipes
         if (globalOptions.globalMiddleware?.pipes?.length) {
-            this.logger.debug(`Applying ${globalOptions.globalMiddleware.pipes.length} global pipes to gRPC service`);
-            globalOptions.globalMiddleware.pipes.forEach((pipe: PipeTransform) => {
+            this.logger.log(`✅ Applying ${globalOptions.globalMiddleware.pipes.length} global pipes to gRPC service`);
+            globalOptions.globalMiddleware.pipes.forEach((pipe: PipeTransform, index: number) => {
+                this.logger.log(`  - Pipe ${index + 1}: ${pipe.constructor.name}`);
                 microservice.useGlobalPipes(pipe);
             });
+        } else {
+            this.logger.warn('No global pipes configured');
         }
 
         // Apply global filters
         if (globalOptions.globalMiddleware?.filters?.length) {
-            this.logger.debug(
-                `Applying ${globalOptions.globalMiddleware.filters.length} global filters to gRPC service`,
+            this.logger.log(
+                `✅ Applying ${globalOptions.globalMiddleware.filters.length} global filters to gRPC service`,
             );
-            globalOptions.globalMiddleware.filters.forEach((filter: ExceptionFilter) => {
+            globalOptions.globalMiddleware.filters.forEach((filter: ExceptionFilter, index: number) => {
+                this.logger.log(`  - Filter ${index + 1}: ${filter.constructor.name}`);
                 microservice.useGlobalFilters(filter);
             });
+        } else {
+            this.logger.warn('No global filters configured');
         }
 
         // Apply global interceptors
         if (globalOptions.globalMiddleware?.interceptors?.length) {
-            this.logger.debug(
-                `Applying ${globalOptions.globalMiddleware.interceptors.length} global interceptors to gRPC service`,
+            this.logger.log(
+                `✅ Applying ${globalOptions.globalMiddleware.interceptors.length} global interceptors to gRPC service`,
             );
-            globalOptions.globalMiddleware.interceptors.forEach((interceptor: NestInterceptor) => {
+            globalOptions.globalMiddleware.interceptors.forEach((interceptor: NestInterceptor, index: number) => {
+                this.logger.log(`  - Interceptor ${index + 1}: ${interceptor.constructor.name}`);
                 microservice.useGlobalInterceptors(interceptor);
             });
+        } else {
+            this.logger.warn('No global interceptors configured');
         }
 
         // Apply global guards
         if (globalOptions.globalMiddleware?.guards?.length) {
-            this.logger.debug(`Applying ${globalOptions.globalMiddleware.guards.length} global guards to gRPC service`);
-            globalOptions.globalMiddleware.guards.forEach((guard: CanActivate) => {
+            this.logger.log(
+                `✅ Applying ${globalOptions.globalMiddleware.guards.length} global guards to gRPC service`,
+            );
+            globalOptions.globalMiddleware.guards.forEach((guard: CanActivate, index: number) => {
+                this.logger.log(`  - Guard ${index + 1}: ${guard.constructor.name}`);
                 microservice.useGlobalGuards(guard);
             });
+        } else {
+            this.logger.warn('No global guards configured');
         }
+
+        this.logger.log('🎉 Global middleware applied successfully!');
     }
 
     private async shutdownGrpcServer(server: RunningGrpcServer): Promise<void> {
