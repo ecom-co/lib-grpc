@@ -1,6 +1,8 @@
 /* eslint-disable complexity */
 /* eslint-disable sonarjs/cognitive-complexity */
-import { ArgumentsHost, Catch, ExceptionFilter, Logger } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+import { ArgumentsHost, Catch, ExceptionFilter, ExecutionContext, Logger } from '@nestjs/common';
 
 import { get, has, isArray, isFunction, isObject, toLower } from 'lodash';
 
@@ -8,6 +10,7 @@ import { RpcException } from '@nestjs/microservices';
 import { Observable, throwError } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
+import { GRPC_METHOD_METADATA_KEY, GRPC_SERVICE_METADATA_KEY } from '../constants';
 import { DEFAULT_ERROR_MESSAGES, ERROR_NAME_TO_GRPC_CODE, GRPC_STATUS_CODES } from '../constants/grpc.constants';
 import { GrpcValidationException } from '../exceptions/grpc-validation.exception';
 
@@ -102,7 +105,11 @@ export class GrpcExceptionFilter implements ExceptionFilter {
     private readonly maxDetailsSize: number;
     private readonly rateLimitWindowMs: number;
 
-    constructor(options?: GrpcExceptionFilterOptions, errorMetrics?: GrpcErrorMetrics) {
+    constructor(
+        private readonly reflector: Reflector,
+        options?: GrpcExceptionFilterOptions,
+        errorMetrics?: GrpcErrorMetrics,
+    ) {
         this.isDevelopment = options?.isDevelopment ?? false;
         this.enableLogging = options?.enableLogging ?? true;
         this.enableMetrics = options?.enableMetrics ?? false;
@@ -219,14 +226,24 @@ export class GrpcExceptionFilter implements ExceptionFilter {
         return uuidv4();
     }
 
-    private getServiceMethod(context: GrpcContext): string {
+    private getServiceMethod(context: GrpcContext, host: ExecutionContext): string {
         try {
-            const service = isGrpcContext(context) && context.service ? context.service : 'unknown';
-            const method = isGrpcContext(context) && context.method ? context.method : 'unknown';
+            // First try to get from handler metadata (custom decorator)
+            const handler = host.getHandler();
+            const service = this.reflector.get<string>(GRPC_SERVICE_METADATA_KEY, handler);
+            const method = this.reflector.get<string>(GRPC_METHOD_METADATA_KEY, handler);
 
-            return `${service}.${method}`;
+            if (service && method) {
+                return `[${service}] - [${method}]`;
+            }
+
+            // Fallback to context (original approach)
+            const contextService = isGrpcContext(context) && context.service ? context.service : 'unknown';
+            const contextMethod = isGrpcContext(context) && context.method ? context.method : 'unknown';
+
+            return `[${contextService}] - [${contextMethod}]`;
         } catch (contextError) {
-            this.logger.debug('Failed to extract service method from context', contextError as Error);
+            this.logger.debug('Failed to extract service method from context or metadata', contextError as Error);
 
             return 'unknown.unknown';
         }
@@ -300,15 +317,17 @@ export class GrpcExceptionFilter implements ExceptionFilter {
         try {
             const errorInfo = this.getErrorInfo(exception);
             const correlationId = this.getOrCreateCorrelationId(context);
-            const serviceMethod = this.getServiceMethod(context);
+            // Cast to ExecutionContext to access getHandler()
+            const serviceMethod = this.getServiceMethod(context, host as ExecutionContext);
 
             // Record metrics if enabled
             if (this.enableMetrics && this.errorMetrics) {
                 setImmediate(() => {
                     try {
-                        const service = isGrpcContext(context) && context.service ? context.service : 'unknown';
+                        // Extract service name from serviceMethod
+                        const serviceName = serviceMethod.split('.')[0] || 'unknown';
 
-                        this.errorMetrics!.increment(errorInfo.code, serviceMethod, service);
+                        this.errorMetrics!.increment(errorInfo.code, serviceMethod, serviceName);
                     } catch (metricsError) {
                         this.logger.warn('Failed to record metrics', metricsError as Error);
                     }

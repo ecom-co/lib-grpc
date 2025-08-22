@@ -7,11 +7,9 @@ export * from './filters';
 
 export * from './pipes';
 
-// 🚀 New modular architecture
+// 🚀 Core utilities
 export * from './decorators';
 
 export * from './enhancements';
-
-export * from './modules';
 
 export * from './shared';

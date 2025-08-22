@@ -82,3 +82,7 @@ export const DEFAULT_ERROR_MESSAGES: Record<number, string> = {
     [GRPC_STATUS_CODES.UNAVAILABLE]: 'Service unavailable',
     [GRPC_STATUS_CODES.UNIMPLEMENTED]: 'Method not implemented',
 } as const;
+
+export const GRPC_SERVICE_METADATA_KEY = 'grpc.service-metadata';
+
+export const GRPC_METHOD_METADATA_KEY = 'grpc.method-metadata';
