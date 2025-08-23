@@ -12,4 +12,6 @@ export * from './decorators';
 
 export * from './enhancements';
 
+export * from './interceptors';
+
 export * from './shared';

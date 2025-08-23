@@ -11,7 +11,7 @@ import { get, has, isArray, keys, set, size } from 'lodash';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { GRPC_METHOD_METADATA, GrpcMethodMetadata } from '../../decorators';
+import { GRPC_METHOD_METADATA, GrpcMethodMetadata } from '../decorators';
 
 enum LogLevel {
     DEBUG = 'debug',
