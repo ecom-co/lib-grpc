@@ -24,14 +24,14 @@ A comprehensive gRPC utilities library for NestJS applications with enterprise-g
   - [GrpcValidationPipe Options](#grpcvalidationpipe-options)
   - [GrpcLoggingInterceptor Options](#grpclogginginterceptor-options)
 - [gRPC Exception Filter](#grpc-exception-filter)
-  - [Features](#exception-filter-features)
+  - [Features](#features-1)
   - [Exception Transformation Rules](#exception-transformation-rules)
-  - [Basic Usage](#exception-filter-basic-usage)
+  - [Basic Usage](#basic-usage)
   - [Advanced Configuration](#advanced-configuration)
   - [Runtime Configuration](#runtime-configuration)
   - [Exception Handling Examples](#exception-handling-examples)
   - [Error Response Structure](#error-response-structure)
-  - [Best Practices](#exception-filter-best-practices)
+  - [Best Practices](#best-practices)
   - [Integration with Other Filters](#integration-with-other-filters)
 - [gRPC to HTTP Error Mapping](#grpc-to-http-error-mapping)
   - [Network Error Handling](#network-error-handling)
@@ -42,7 +42,7 @@ A comprehensive gRPC utilities library for NestJS applications with enterprise-g
   - [Validation Exception](#validation-exception)
   - [Utility Functions](#utility-functions)
   - [Exception Details Structure](#exception-details-structure)
-  - [Best Practices](#exceptions-best-practices)
+  - [Best Practices](#best-practices-1)
 - [Example Usage](#example-usage)
   - [Basic gRPC Service](#basic-grpc-service)
   - [HTTP Service with gRPC Client](#http-service-with-grpc-client)
@@ -53,7 +53,7 @@ A comprehensive gRPC utilities library for NestJS applications with enterprise-g
 - [Benefits](#benefits)
 - [License](#license)
 
-## Features {#features}
+## Features
 
 - 🎯 **Enhanced Decorators**: `@GrpcMethod()` with metadata support
 - 🛡️ **Exception Handling**: `GrpcExceptionFilter` and `HttpGrpcExceptionFilter` for proper error handling
@@ -64,15 +64,15 @@ A comprehensive gRPC utilities library for NestJS applications with enterprise-g
 - 🌐 **HTTP Integration**: Convert gRPC errors to HTTP responses seamlessly
 - 🎨 **Clean API**: Simple and intuitive interface
 
-## Quick Start {#quick-start}
+## Quick Start
 
-### Install {#install}
+### Install
 
 ```bash
 npm install @ecom-co/grpc
 ```
 
-### Use Enhanced Decorators {#use-enhanced-decorators}
+### Use Enhanced Decorators
 
 ```typescript
 import { GrpcMethod } from '@ecom-co/grpc';
@@ -90,7 +90,7 @@ export class UserController {
 }
 ```
 
-### Add Exception Filters {#add-exception-filters}
+### Add Exception Filters
 
 #### For gRPC Services
 ```typescript
@@ -127,7 +127,7 @@ app.useGlobalFilters(new HttpGrpcExceptionFilter({
 }));
 ```
 
-### Use Validation Pipe {#use-validation-pipe}
+### Use Validation Pipe
 
 ```typescript
 import { GrpcValidationPipe } from '@ecom-co/grpc';
@@ -147,7 +147,7 @@ app.useGlobalPipes(new GrpcValidationPipe({
 }));
 ```
 
-### Add Logging Interceptor {#add-logging-interceptor}
+### Add Logging Interceptor
 
 ```typescript
 import { GrpcLoggingInterceptor } from '@ecom-co/grpc';
@@ -155,25 +155,25 @@ import { GrpcLoggingInterceptor } from '@ecom-co/grpc';
 app.useGlobalInterceptors(new GrpcLoggingInterceptor());
 ```
 
-## Available Utilities {#available-utilities}
+## Available Utilities
 
-### Decorators {#decorators}
+### Decorators
 - `@GrpcMethod(service, method, metadata?)` - Enhanced gRPC method decorator with metadata support
 - `@Cacheable(options)` - Cache method results
 - `@TraceOperation()` - Add distributed tracing
 - `@MonitorPerformance()` - Monitor method performance
 
-### Filters {#filters}
+### Filters
 - `GrpcExceptionFilter` - Handle gRPC exceptions properly
 - `HttpGrpcExceptionFilter` - Convert gRPC errors to HTTP responses with detailed error mapping
 
-### Pipes {#pipes}
+### Pipes
 - `GrpcValidationPipe` - Validate gRPC requests
 
-### Interceptors {#interceptors}
+### Interceptors
 - `GrpcLoggingInterceptor` - Comprehensive request/response logging with correlation IDs
 
-### Exceptions {#exceptions}
+### Exceptions
 - **BaseGrpcException** - Abstract base class for all gRPC exceptions
 - **GrpcBadRequestException** - Invalid argument errors (400 equivalent)
 - **GrpcUnauthorizedException** - Authentication errors (401 equivalent)
@@ -192,14 +192,14 @@ app.useGlobalInterceptors(new GrpcLoggingInterceptor());
 - **GrpcNotImplementedException** - Unimplemented feature errors (501 equivalent)
 - **GrpcOutOfRangeException** - Value out of range errors
 
-### Enhancements {#enhancements}
+### Enhancements
 - **Circuit Breaker**: `CircuitBreakerModule` and `CircuitBreakerService` for fault tolerance
 - **Distributed Tracing**: `TracingModule` and `DistributedTracerService` for request tracking
 - **Performance Monitoring**: Built-in performance monitoring capabilities
 
-## Configuration Options {#configuration-options}
+## Configuration Options
 
-### GrpcExceptionFilter Options {#grpcexceptionfilter-options}
+### GrpcExceptionFilter Options
 ```typescript
 interface GrpcExceptionFilterOptions {
     customErrorMappings?: Record<string, new (message: string) => RpcException>;
@@ -210,7 +210,7 @@ interface GrpcExceptionFilterOptions {
 }
 ```
 
-### HttpGrpcExceptionFilter Options {#httpgrpcexceptionfilter-options}
+### HttpGrpcExceptionFilter Options
 ```typescript
 interface HttpGrpcExceptionFilterOptions {
     enableDetailedLogging?: boolean;    // Enable detailed error logging
@@ -221,7 +221,7 @@ interface HttpGrpcExceptionFilterOptions {
 }
 ```
 
-### GrpcValidationPipe Options {#grpcvalidationpipe-options}
+### GrpcValidationPipe Options
 ```typescript
 interface GrpcValidationPipeOptions {
     dataSerializer?: <T>(data: T) => T;
@@ -236,7 +236,7 @@ interface GrpcValidationPipeOptions {
 }
 ```
 
-### GrpcLoggingInterceptor Options {#grpclogginginterceptor-options}
+### GrpcLoggingInterceptor Options
 ```typescript
 interface LoggingOption {
     isDevelopment?: boolean;
@@ -246,11 +246,11 @@ interface LoggingOption {
 }
 ```
 
-## gRPC Exception Filter {#grpc-exception-filter}
+## gRPC Exception Filter
 
 The `GrpcExceptionFilter` is a comprehensive exception filter that transforms various types of exceptions into appropriate gRPC exceptions, ensuring consistent error handling across your gRPC services.
 
-### Features {#exception-filter-features}
+### Features
 
 - **Automatic Exception Transformation**: Converts HTTP exceptions, validation errors, and generic errors to gRPC exceptions
 - **Custom Error Mappings**: Define custom mappings for specific error types
@@ -258,7 +258,7 @@ The `GrpcExceptionFilter` is a comprehensive exception filter that transforms va
 - **Runtime Configuration**: Update filter options at runtime
 - **Production Safety**: Hide internal error details in production
 
-### Exception Transformation Rules {#exception-transformation-rules}
+### Exception Transformation Rules
 
 The filter automatically transforms different exception types:
 
@@ -277,7 +277,7 @@ The filter automatically transforms different exception types:
 | `ValidationError` | `GrpcValidationException` | INVALID_ARGUMENT (3) |
 | Generic `Error` | `GrpcInternalException` | INTERNAL (13) |
 
-### Basic Usage {#exception-filter-basic-usage}
+### Basic Usage
 
 ```typescript
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
@@ -293,7 +293,7 @@ app.useGlobalFilters(new GrpcExceptionFilter({
 }));
 ```
 
-### Advanced Configuration {#advanced-configuration}
+### Advanced Configuration
 
 ```typescript
 import { GrpcExceptionFilter, GrpcCustomException } from '@ecom-co/grpc';
@@ -312,7 +312,7 @@ app.useGlobalFilters(new GrpcExceptionFilter({
 }));
 ```
 
-### Runtime Configuration {#runtime-configuration}
+### Runtime Configuration
 
 ```typescript
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
@@ -333,7 +333,7 @@ const currentOptions = filter.getOptions();
 console.log('Current options:', currentOptions);
 ```
 
-### Exception Handling Examples {#exception-handling-examples}
+### Exception Handling Examples
 
 #### HTTP Exception Transformation
 ```typescript
@@ -419,7 +419,7 @@ app.useGlobalFilters(new GrpcExceptionFilter({
 }));
 ```
 
-### Error Response Structure {#error-response-structure}
+### Error Response Structure
 
 The filter transforms exceptions into standardized gRPC error responses:
 
@@ -455,7 +455,7 @@ The filter transforms exceptions into standardized gRPC error responses:
 }
 ```
 
-### Best Practices {#exception-filter-best-practices}
+### Best Practices
 
 #### 1. Configure for Environment
 ```typescript
@@ -510,7 +510,7 @@ const filter = new GrpcExceptionFilter({
 // The filter will automatically log all exceptions with details
 ```
 
-### Integration with Other Filters {#integration-with-other-filters}
+### Integration with Other Filters
 
 ```typescript
 import { GrpcExceptionFilter, HttpGrpcExceptionFilter } from '@ecom-co/grpc';
@@ -528,7 +528,7 @@ app.useGlobalFilters(new HttpGrpcExceptionFilter({
 }));
 ```
 
-## gRPC to HTTP Error Mapping {#grpc-to-http-error-mapping}
+## gRPC to HTTP Error Mapping
 
 The `HttpGrpcExceptionFilter` provides comprehensive mapping from gRPC status codes to HTTP status codes:
 
@@ -552,7 +552,7 @@ The `HttpGrpcExceptionFilter` provides comprehensive mapping from gRPC status co
 | `DATA_LOSS` (15) | 500 | Internal Server Error |
 | `UNAUTHENTICATED` (16) | 401 | Unauthorized |
 
-### Network Error Handling {#network-error-handling}
+### Network Error Handling
 
 The filter also handles various network and connection errors:
 
@@ -562,13 +562,13 @@ The filter also handles various network and connection errors:
 - **Channel Closed**: → 503 Service Unavailable
 - **Service Definition Not Found**: → 500 Internal Server Error
 
-## gRPC Exceptions {#grpc-exceptions}
+## gRPC Exceptions
 
 The library provides a comprehensive set of gRPC exception classes that map to standard HTTP status codes and gRPC status codes.
 
-### Available Exception Classes {#available-exception-classes}
+### Available Exception Classes
 
-#### Basic Exceptions {#basic-exceptions}
+#### Basic Exceptions
 ```typescript
 import { 
     GrpcBadRequestException,
@@ -611,7 +611,7 @@ throw new GrpcUnavailableException('Service temporarily unavailable', 30);
 throw new GrpcResourceExhaustedException('Rate limit exceeded', 'requests', 100, 150);
 ```
 
-#### Advanced Exceptions {#advanced-exceptions}
+#### Advanced Exceptions
 ```typescript
 import {
     GrpcCancelledException,
@@ -641,7 +641,7 @@ throw new GrpcNotImplementedException('Feature not available', 'real_time_chat')
 throw new GrpcOutOfRangeException('Page number out of range', { actual: 100, min: 1, max: 50 });
 ```
 
-### Validation Exception {#validation-exception}
+### Validation Exception
 ```typescript
 import { GrpcValidationException } from '@ecom-co/grpc';
 
@@ -652,7 +652,7 @@ throw new GrpcValidationException('Validation failed', ['Email is required', 'Pa
 throw new GrpcValidationException('Email validation failed', ['Invalid email format'], 'email');
 ```
 
-### Utility Functions {#utility-functions}
+### Utility Functions
 
 #### Convert HTTP Status to gRPC Exception
 ```typescript
@@ -677,7 +677,7 @@ if (isGrpcException(error)) {
 }
 ```
 
-### Exception Details Structure {#exception-details-structure}
+### Exception Details Structure
 
 All gRPC exceptions include structured error details:
 
@@ -708,7 +708,7 @@ All gRPC exceptions include structured error details:
 }
 ```
 
-### Best Practices {#exceptions-best-practices}
+### Best Practices
 
 #### 1. Use Specific Exceptions
 ```typescript
@@ -777,9 +777,9 @@ try {
 }
 ```
 
-## Example Usage {#example-usage}
+## Example Usage
 
-### Basic gRPC Service {#basic-grpc-service}
+### Basic gRPC Service
 ```typescript
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
@@ -838,7 +838,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-### HTTP Service with gRPC Client {#http-service-with-grpc-client}
+### HTTP Service with gRPC Client
 ```typescript
 import { NestFactory } from '@nestjs/core';
 import { 
@@ -875,7 +875,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-### Error Response Format {#error-response-format}
+### Error Response Format
 
 The `HttpGrpcExceptionFilter` returns structured error responses:
 
@@ -902,9 +902,9 @@ The `HttpGrpcExceptionFilter` returns structured error responses:
 }
 ```
 
-## Advanced Features {#advanced-features}
+## Advanced Features
 
-### Circuit Breaker {#circuit-breaker}
+### Circuit Breaker
 ```typescript
 import { CircuitBreakerModule } from '@ecom-co/grpc';
 
@@ -915,7 +915,7 @@ import { CircuitBreakerModule } from '@ecom-co/grpc';
 export class AppModule {}
 ```
 
-### Distributed Tracing {#distributed-tracing}
+### Distributed Tracing
 ```typescript
 import { TracingModule } from '@ecom-co/grpc';
 
@@ -926,7 +926,7 @@ import { TracingModule } from '@ecom-co/grpc';
 export class AppModule {}
 ```
 
-## Benefits {#benefits}
+## Benefits
 
 - 🚀 **Enterprise Ready**: Built for production with circuit breakers and tracing
 - 🎯 **Enhanced Logging**: Comprehensive logging with correlation IDs and request tracking
@@ -937,6 +937,6 @@ export class AppModule {}
 - 📊 **Observable**: Built-in monitoring and tracing capabilities
 - 🔍 **Detailed Error Mapping**: Comprehensive gRPC to HTTP status code mapping
 
-## License {#license}
+## License
 
 ISC
