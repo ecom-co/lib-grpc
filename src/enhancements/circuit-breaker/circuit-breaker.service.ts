@@ -113,7 +113,7 @@ export class CircuitBreakerService {
                 this.state.state = 'OPEN';
                 this.state.nextAttempt = new Date(Date.now() + this.config.recoveryTimeout);
                 this.metrics.circuitOpenCount++;
-                this.logger.warn(`🔴 Circuit breaker OPENED after ${this.state.failureCount} failures`);
+                this.logger.warn(`Circuit breaker OPENED after ${this.state.failureCount} failures`);
             }
         }
     }

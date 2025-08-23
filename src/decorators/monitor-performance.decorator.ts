@@ -47,7 +47,7 @@ export const MonitorPerformance =
                 };
 
                 if (duration > threshold) {
-                    logger.warn(`⚠️ Slow operation: ${propertyKey} took ${duration.toFixed(2)}ms`, {
+                    logger.warn(`Slow operation: ${propertyKey} took ${duration.toFixed(2)}ms`, {
                         method: propertyKey,
                         metrics,
                         timestamp: new Date().toISOString(),
@@ -65,7 +65,7 @@ export const MonitorPerformance =
                 const endTime = process.hrtime.bigint();
                 const duration = Number(endTime - startTime) / 1_000_000;
 
-                logger.error(`❌ ${propertyKey} failed after ${duration.toFixed(2)}ms`, {
+                logger.error(`${propertyKey} failed after ${duration.toFixed(2)}ms`, {
                     duration: `${duration.toFixed(2)}ms`,
                     error: error instanceof Error ? error.message : String(error),
                     method: propertyKey,

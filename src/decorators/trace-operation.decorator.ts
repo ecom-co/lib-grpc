@@ -24,7 +24,7 @@ export const TraceOperation =
             const traceId = randomUUID();
             const startTime = Date.now();
 
-            logger.log(`🟢 [${traceId}] Starting ${operationName}`, {
+            logger.log(`[${traceId}] Starting ${operationName}`, {
                 args: options.includeArgs ? args : '[hidden]',
                 operation: operationName,
                 timestamp: new Date().toISOString(),
@@ -36,7 +36,7 @@ export const TraceOperation =
 
                 const duration = Date.now() - startTime;
 
-                logger.log(`✅ [${traceId}] Completed ${operationName} in ${duration}ms`, {
+                logger.log(`[${traceId}] Completed ${operationName} in ${duration}ms`, {
                     duration: `${duration}ms`,
                     operation: operationName,
                     result: options.includeResult ? result : '[hidden]',
@@ -50,7 +50,7 @@ export const TraceOperation =
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 const errorStack = error instanceof Error ? error.stack : undefined;
 
-                logger.error(`❌ [${traceId}] Failed ${operationName} in ${duration}ms`, {
+                logger.error(`[${traceId}] Failed ${operationName} in ${duration}ms`, {
                     duration: `${duration}ms`,
                     error: errorMessage,
                     operation: operationName,
