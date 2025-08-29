@@ -1,3 +1,3 @@
-export * from './grpc-exception.filter';
+export * from './grpc-client-exception.filter';
 
-export * from './grpc-to-http.filter';
+export * from './grpc-exception.filter';

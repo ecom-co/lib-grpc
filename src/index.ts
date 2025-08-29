@@ -1,4 +1,6 @@
 // 🔧 Core utilities
+export * from './client';
+
 export * from './constants';
 
 export * from './decorators';
