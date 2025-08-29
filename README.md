@@ -6,59 +6,68 @@ A comprehensive gRPC utilities library for NestJS applications with enterprise-g
 
 - [Features](#features)
 - [Quick Start](#quick-start)
-  - [Install](#install)
-  - [Use Enhanced Decorators](#use-enhanced-decorators)
-  - [Add Exception Filters](#add-exception-filters)
-  - [Use Validation Pipe](#use-validation-pipe)
-  - [Add Logging Interceptor](#add-logging-interceptor)
+    - [Install](#install)
+    - [Use Enhanced Decorators](#use-enhanced-decorators)
+    - [Add Exception Filters](#add-exception-filters)
+    - [Use Validation Pipe](#use-validation-pipe)
+    - [Add Logging Interceptor](#add-logging-interceptor)
 - [Available Utilities](#available-utilities)
-  - [Decorators](#decorators)
-  - [Filters](#filters)
-  - [Pipes](#pipes)
-  - [Interceptors](#interceptors)
-  - [Exceptions](#exceptions)
-  - [Enhancements](#enhancements)
+    - [Decorators](#decorators)
+    - [Filters](#filters)
+    - [Pipes](#pipes)
+    - [Interceptors](#interceptors)
+    - [Exceptions](#exceptions)
+    - [Enhancements](#enhancements)
 - [Configuration Options](#configuration-options)
-  - [GrpcExceptionFilter Options](#grpcexceptionfilter-options)
-  - [HttpGrpcExceptionFilter Options](#httpgrpcexceptionfilter-options)
-  - [GrpcValidationPipe Options](#grpcvalidationpipe-options)
-  - [GrpcLoggingInterceptor Options](#grpclogginginterceptor-options)
+    - [GrpcExceptionFilter Options](#grpcexceptionfilter-options)
+    - [GrpcClientExceptionFilter Options](#grpcclientexceptionfilter-options)
+    - [GrpcValidationPipe Options](#grpcvalidationpipe-options)
+    - [GrpcLoggingInterceptor Options](#grpclogginginterceptor-options)
+- [gRPC Client Module](#grpc-client-module)
+    - [Features](#features-2)
+    - [Basic Usage](#basic-usage-1)
+    - [Advanced Configuration](#advanced-configuration-1)
+    - [Error Handling](#error-handling)
+    - [Integration with Exception Filter](#integration-with-exception-filter)
+    - [Logging Features](#logging-features)
+    - [Best Practices](#best-practices-2)
 - [gRPC Exception Filter](#grpc-exception-filter)
-  - [Features](#features-1)
-  - [Exception Transformation Rules](#exception-transformation-rules)
-  - [Basic Usage](#basic-usage)
-  - [Advanced Configuration](#advanced-configuration)
-  - [Runtime Configuration](#runtime-configuration)
-  - [Exception Handling Examples](#exception-handling-examples)
-  - [Error Response Structure](#error-response-structure)
-  - [Best Practices](#best-practices)
-  - [Integration with Other Filters](#integration-with-other-filters)
+    - [Features](#features-1)
+    - [Exception Transformation Rules](#exception-transformation-rules)
+    - [Basic Usage](#basic-usage)
+    - [Advanced Configuration](#advanced-configuration)
+    - [Runtime Configuration](#runtime-configuration)
+    - [Exception Handling Examples](#exception-handling-examples)
+    - [Error Response Structure](#error-response-structure)
+    - [Best Practices](#best-practices)
+    - [Integration with Other Filters](#integration-with-other-filters)
 - [gRPC to HTTP Error Mapping](#grpc-to-http-error-mapping)
-  - [Network Error Handling](#network-error-handling)
+    - [Network Error Handling](#network-error-handling)
 - [gRPC Exceptions](#grpc-exceptions)
-  - [Available Exception Classes](#available-exception-classes)
-  - [Basic Exceptions](#basic-exceptions)
-  - [Advanced Exceptions](#advanced-exceptions)
-  - [Validation Exception](#validation-exception)
-  - [Utility Functions](#utility-functions)
-  - [Exception Details Structure](#exception-details-structure)
-  - [Best Practices](#best-practices-1)
+    - [Available Exception Classes](#available-exception-classes)
+    - [Basic Exceptions](#basic-exceptions)
+    - [Advanced Exceptions](#advanced-exceptions)
+    - [Validation Exception](#validation-exception)
+    - [Utility Functions](#utility-functions)
+    - [Exception Details Structure](#exception-details-structure)
+    - [Best Practices](#best-practices-1)
 - [Example Usage](#example-usage)
-  - [Basic gRPC Service](#basic-grpc-service)
-  - [HTTP Service with gRPC Client](#http-service-with-grpc-client)
-  - [Error Response Format](#error-response-format)
+    - [Basic gRPC Service](#basic-grpc-service)
+    - [HTTP Service with gRPC Client](#http-service-with-grpc-client)
+    - [Error Response Format](#error-response-format)
 - [Advanced Features](#advanced-features)
-  - [Circuit Breaker](#circuit-breaker)
-  - [Distributed Tracing](#distributed-tracing)
+    - [Circuit Breaker](#circuit-breaker)
+    - [Distributed Tracing](#distributed-tracing)
 - [Benefits](#benefits)
 - [License](#license)
 
 ## Features
 
 - 🎯 **Enhanced Decorators**: `@GrpcMethod()` with metadata support
-- 🛡️ **Exception Handling**: `GrpcExceptionFilter` and `HttpGrpcExceptionFilter` for proper error handling
+- 🛡️ **Exception Handling**: `GrpcExceptionFilter` and `GrpcClientExceptionFilter` for proper error handling
 - ✅ **Validation**: `GrpcValidationPipe` for request validation
 - 📝 **Logging**: `GrpcLoggingInterceptor` for comprehensive request/response logging
+- 🔧 **Client Wrapper**: `WrappedGrpc` with built-in logging, retry, and timeout capabilities
 - ⚡ **Circuit Breaker**: Built-in circuit breaker pattern for resilience
 - 🔍 **Distributed Tracing**: Distributed tracing capabilities
 - 🌐 **HTTP Integration**: Convert gRPC errors to HTTP responses seamlessly
@@ -82,7 +91,7 @@ export class UserController {
     @GrpcMethod('user', 'getUser', {
         description: 'Get user by ID',
         requiresAuth: true,
-        rateLimit: 100
+        rateLimit: 100,
     })
     async getUser(data: { id: string }) {
         return { id: data.id, name: 'John Doe' };
@@ -93,6 +102,7 @@ export class UserController {
 ### Add Exception Filters
 
 #### For gRPC Services
+
 ```typescript
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
 
@@ -100,31 +110,38 @@ import { GrpcExceptionFilter } from '@ecom-co/grpc';
 app.useGlobalFilters(new GrpcExceptionFilter());
 
 // With options
-app.useGlobalFilters(new GrpcExceptionFilter({
-    enableLogging: true,
-    exposeInternalErrors: process.env.NODE_ENV !== 'production',
-    defaultErrorMessage: 'An unexpected error occurred',
-    customErrorMappings: {
-        'CustomError': CustomGrpcException
-    }
-}));
+app.useGlobalFilters(
+    new GrpcExceptionFilter({
+        enableLogging: true,
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+        defaultErrorMessage: 'An unexpected error occurred',
+        customErrorMappings: {
+            CustomError: CustomGrpcException,
+        },
+    }),
+);
 ```
 
 #### For HTTP Services (gRPC to HTTP)
+
 ```typescript
-import { HttpGrpcExceptionFilter } from '@ecom-co/grpc';
+import { GrpcClientExceptionFilter } from '@ecom-co/grpc';
 
 // Basic usage
-app.useGlobalFilters(new HttpGrpcExceptionFilter());
+app.useGlobalFilters(new GrpcClientExceptionFilter());
 
 // With advanced options
-app.useGlobalFilters(new HttpGrpcExceptionFilter({
-    enableDetailedLogging: true,
-    enableStackTrace: process.env.NODE_ENV !== 'production',
-    includeMetadata: false,
-    isDevelopment: process.env.NODE_ENV !== 'production',
-    logLevel: 'error'
-}));
+app.useGlobalFilters(
+    new GrpcClientExceptionFilter({
+        enableDetailedLogging: true,
+        enableStackTrace: process.env.NODE_ENV !== 'production',
+        includeMetadata: false,
+        isDevelopment: process.env.NODE_ENV !== 'production',
+        logLevel: 'error',
+        defaultErrorMessage: 'Service temporarily unavailable',
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+    }),
+);
 ```
 
 ### Use Validation Pipe
@@ -136,15 +153,17 @@ import { GrpcValidationPipe } from '@ecom-co/grpc';
 app.useGlobalPipes(new GrpcValidationPipe());
 
 // With options
-app.useGlobalPipes(new GrpcValidationPipe({
-    enableErrorLogging: true,
-    stripUnknownProperties: true,
-    errorMessagePrefix: 'Request validation failed',
-    validationOptions: {
-        whitelist: true,
-        forbidNonWhitelisted: true
-    }
-}));
+app.useGlobalPipes(
+    new GrpcValidationPipe({
+        enableErrorLogging: true,
+        stripUnknownProperties: true,
+        errorMessagePrefix: 'Request validation failed',
+        validationOptions: {
+            whitelist: true,
+            forbidNonWhitelisted: true,
+        },
+    }),
+);
 ```
 
 ### Add Logging Interceptor
@@ -158,22 +177,27 @@ app.useGlobalInterceptors(new GrpcLoggingInterceptor());
 ## Available Utilities
 
 ### Decorators
+
 - `@GrpcMethod(service, method, metadata?)` - Enhanced gRPC method decorator with metadata support
 - `@Cacheable(options)` - Cache method results
 - `@TraceOperation()` - Add distributed tracing
 - `@MonitorPerformance()` - Monitor method performance
 
 ### Filters
+
 - `GrpcExceptionFilter` - Handle gRPC exceptions properly
-- `HttpGrpcExceptionFilter` - Convert gRPC errors to HTTP responses with detailed error mapping
+- `GrpcClientExceptionFilter` - Convert gRPC client errors to HTTP responses with detailed error mapping
 
 ### Pipes
+
 - `GrpcValidationPipe` - Validate gRPC requests
 
 ### Interceptors
+
 - `GrpcLoggingInterceptor` - Comprehensive request/response logging with correlation IDs
 
 ### Exceptions
+
 - **BaseGrpcException** - Abstract base class for all gRPC exceptions
 - **GrpcBadRequestException** - Invalid argument errors (400 equivalent)
 - **GrpcUnauthorizedException** - Authentication errors (401 equivalent)
@@ -193,13 +217,21 @@ app.useGlobalInterceptors(new GrpcLoggingInterceptor());
 - **GrpcOutOfRangeException** - Value out of range errors
 
 ### Enhancements
+
 - **Circuit Breaker**: `CircuitBreakerModule` and `CircuitBreakerService` for fault tolerance
 - **Distributed Tracing**: `TracingModule` and `DistributedTracerService` for request tracking
 - **Performance Monitoring**: Built-in performance monitoring capabilities
 
+### Client
+
+- **WrappedGrpc**: Enhanced gRPC client wrapper with logging, retry, and timeout capabilities
+- **GrpcClientException**: Custom exception class for gRPC client errors
+- **createWrappedGrpc**: Factory function to create wrapped gRPC clients
+
 ## Configuration Options
 
 ### GrpcExceptionFilter Options
+
 ```typescript
 interface GrpcExceptionFilterOptions {
     customErrorMappings?: Record<string, new (message: string) => RpcException>;
@@ -210,18 +242,22 @@ interface GrpcExceptionFilterOptions {
 }
 ```
 
-### HttpGrpcExceptionFilter Options
+### GrpcClientExceptionFilter Options
+
 ```typescript
-interface HttpGrpcExceptionFilterOptions {
-    enableDetailedLogging?: boolean;    // Enable detailed error logging
-    enableStackTrace?: boolean;         // Include stack traces in logs
-    includeMetadata?: boolean;          // Include gRPC metadata in logs
-    isDevelopment?: boolean;            // Development mode for debug info
+interface GrpcClientExceptionFilterOptions {
+    enableDetailedLogging?: boolean; // Enable detailed error logging
+    enableStackTrace?: boolean; // Include stack traces in logs
+    includeMetadata?: boolean; // Include gRPC metadata in logs
+    isDevelopment?: boolean; // Development mode for debug info
     logLevel?: 'debug' | 'error' | 'warn'; // Logging level
+    defaultErrorMessage?: string; // Default error message for unknown errors
+    exposeInternalErrors?: boolean; // Expose internal error details in production
 }
 ```
 
 ### GrpcValidationPipe Options
+
 ```typescript
 interface GrpcValidationPipeOptions {
     dataSerializer?: <T>(data: T) => T;
@@ -237,12 +273,226 @@ interface GrpcValidationPipeOptions {
 ```
 
 ### GrpcLoggingInterceptor Options
+
 ```typescript
 interface LoggingOption {
     isDevelopment?: boolean;
     logLevel?: 'debug' | 'error' | 'info' | 'silent' | 'warn';
     logRequest?: boolean;
     logResponse?: boolean;
+}
+```
+
+## gRPC Client Module
+
+The gRPC Client module provides enhanced client capabilities with built-in logging, retry mechanisms, timeout handling, and error management.
+
+### Features
+
+- **Enhanced Logging**: Automatic request/response logging with sensitive data sanitization
+- **Retry Mechanism**: Configurable retry logic for failed requests
+- **Timeout Handling**: Automatic timeout management for long-running requests
+- **Error Wrapping**: Consistent error handling with `GrpcClientException`
+- **Proxy-based Wrapping**: Transparent service method wrapping without code changes
+- **Sensitive Data Protection**: Automatic redaction of sensitive fields in logs
+
+### Basic Usage
+
+```typescript
+import { createWrappedGrpc, WrappedGrpc } from '@ecom-co/grpc';
+import { ClientGrpc } from '@nestjs/microservices';
+
+// Create a wrapped gRPC client
+const wrappedClient = createWrappedGrpc(originalClientGrpc, {
+    enableLogging: true,
+    retry: 3,
+    timeout: 30000, // 30 seconds
+});
+
+// Use the wrapped client
+const userService = wrappedClient.getService('UserService');
+const result = await userService.getUser({ id: '123' }).toPromise();
+```
+
+### Advanced Configuration
+
+```typescript
+import { createWrappedGrpc, GrpcOptions } from '@ecom-co/grpc';
+
+const options: GrpcOptions = {
+    enableLogging: process.env.NODE_ENV !== 'production',
+    retry: 5,
+    timeout: 60000, // 1 minute
+};
+
+const wrappedClient = createWrappedGrpc(originalClientGrpc, options);
+```
+
+### Error Handling
+
+The `GrpcClientException` provides structured error information:
+
+```typescript
+import { GrpcClientException } from '@ecom-co/grpc';
+
+try {
+    const result = await userService.getUser({ id: '123' }).toPromise();
+} catch (error) {
+    if (error instanceof GrpcClientException) {
+        console.log('gRPC Error Code:', error.code);
+        console.log('Error Details:', error.details);
+        console.log('Error Metadata:', error.metadata);
+        console.log('Error Message:', error.message);
+    }
+}
+```
+
+### Integration with Exception Filter
+
+The `GrpcClientExceptionFilter` works seamlessly with the wrapped client:
+
+```typescript
+import { GrpcClientExceptionFilter } from '@ecom-co/grpc';
+
+// Configure the filter to handle GrpcClientException
+app.useGlobalFilters(
+    new GrpcClientExceptionFilter({
+        enableDetailedLogging: true,
+        enableStackTrace: process.env.NODE_ENV !== 'production',
+        includeMetadata: false,
+        isDevelopment: process.env.NODE_ENV !== 'production',
+        logLevel: 'error',
+        defaultErrorMessage: 'Service temporarily unavailable',
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+    }),
+);
+```
+
+### Runtime Configuration
+
+You can update filter options at runtime:
+
+```typescript
+import { GrpcClientExceptionFilter } from '@ecom-co/grpc';
+
+const filter = new GrpcClientExceptionFilter({
+    enableDetailedLogging: true,
+    exposeInternalErrors: false,
+});
+
+// Update options at runtime
+filter.updateOptions({
+    enableDetailedLogging: false,
+    exposeInternalErrors: true,
+});
+
+// Get current options
+const currentOptions = filter.getOptions();
+console.log('Current options:', currentOptions);
+```
+
+### Logging Features
+
+The wrapped client automatically logs requests and responses:
+
+```typescript
+// Request logging (with sanitized sensitive data)
+// DEBUG: Calling gRPC method: UserService.getUser
+// {
+//   "args": [
+//     {
+//       "id": "123",
+//       "password": "[REDACTED]"
+//     }
+//   ]
+// }
+
+// Error logging
+// ERROR: gRPC Error in UserService.getUser:
+// {
+//   "error": {
+//     "name": "GrpcClientException",
+//     "code": 5,
+//     "message": "User not found"
+//   },
+//   "method": "getUser",
+//   "service": "UserService"
+// }
+```
+
+### Best Practices
+
+#### 1. Configure Timeouts Appropriately
+
+```typescript
+const options: GrpcOptions = {
+    timeout: 30000, // 30 seconds for most operations
+    retry: 2,
+};
+
+// For long-running operations
+const longRunningOptions: GrpcOptions = {
+    timeout: 300000, // 5 minutes
+    retry: 1,
+};
+```
+
+#### 2. Handle Retries Carefully
+
+```typescript
+const options: GrpcOptions = {
+    retry: 3, // Retry up to 3 times
+    timeout: 10000, // 10 second timeout per attempt
+};
+```
+
+#### 3. Use in NestJS Services
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { createWrappedGrpc, WrappedGrpc } from '@ecom-co/grpc';
+
+@Injectable()
+export class UserService {
+    private readonly wrappedClient: WrappedGrpc;
+
+    constructor(private readonly clientGrpc: ClientGrpc) {
+        this.wrappedClient = createWrappedGrpc(clientGrpc, {
+            enableLogging: true,
+            retry: 2,
+            timeout: 30000,
+        });
+    }
+
+    async getUser(id: string) {
+        const userService = this.wrappedClient.getService('UserService');
+        return await userService.getUser({ id }).toPromise();
+    }
+}
+```
+
+#### 4. Error Handling Patterns
+
+```typescript
+async getUser(id: string) {
+    try {
+        const userService = this.wrappedClient.getService('UserService');
+        return await userService.getUser({ id }).toPromise();
+    } catch (error) {
+        if (error instanceof GrpcClientException) {
+            switch (error.code) {
+                case 5: // NOT_FOUND
+                    throw new NotFoundException('User not found');
+                case 7: // PERMISSION_DENIED
+                    throw new ForbiddenException('Access denied');
+                case 14: // UNAVAILABLE
+                    throw new ServiceUnavailableException('Service unavailable');
+                default:
+                    throw new InternalServerErrorException('Internal server error');
+            }
+        }
+        throw error;
+    }
 }
 ```
 
@@ -262,20 +512,20 @@ The `GrpcExceptionFilter` is a comprehensive exception filter that transforms va
 
 The filter automatically transforms different exception types:
 
-| Input Exception | Transformed To | gRPC Status Code |
-|-----------------|----------------|------------------|
-| `HttpException` (400) | `GrpcBadRequestException` | INVALID_ARGUMENT (3) |
-| `HttpException` (401) | `GrpcUnauthorizedException` | UNAUTHENTICATED (16) |
-| `HttpException` (403) | `GrpcForbiddenException` | PERMISSION_DENIED (7) |
-| `HttpException` (404) | `GrpcNotFoundException` | NOT_FOUND (5) |
-| `HttpException` (408) | `GrpcTimeoutException` | DEADLINE_EXCEEDED (4) |
-| `HttpException` (409) | `GrpcConflictException` | ALREADY_EXISTS (6) |
-| `HttpException` (503) | `GrpcUnavailableException` | UNAVAILABLE (14) |
-| `ValidationError[]` | `GrpcValidationException` | INVALID_ARGUMENT (3) |
-| `ConnectionError` | `GrpcUnavailableException` | UNAVAILABLE (14) |
-| `TimeoutError` | `GrpcTimeoutException` | DEADLINE_EXCEEDED (4) |
-| `ValidationError` | `GrpcValidationException` | INVALID_ARGUMENT (3) |
-| Generic `Error` | `GrpcInternalException` | INTERNAL (13) |
+| Input Exception       | Transformed To              | gRPC Status Code      |
+| --------------------- | --------------------------- | --------------------- |
+| `HttpException` (400) | `GrpcBadRequestException`   | INVALID_ARGUMENT (3)  |
+| `HttpException` (401) | `GrpcUnauthorizedException` | UNAUTHENTICATED (16)  |
+| `HttpException` (403) | `GrpcForbiddenException`    | PERMISSION_DENIED (7) |
+| `HttpException` (404) | `GrpcNotFoundException`     | NOT_FOUND (5)         |
+| `HttpException` (408) | `GrpcTimeoutException`      | DEADLINE_EXCEEDED (4) |
+| `HttpException` (409) | `GrpcConflictException`     | ALREADY_EXISTS (6)    |
+| `HttpException` (503) | `GrpcUnavailableException`  | UNAVAILABLE (14)      |
+| `ValidationError[]`   | `GrpcValidationException`   | INVALID_ARGUMENT (3)  |
+| `ConnectionError`     | `GrpcUnavailableException`  | UNAVAILABLE (14)      |
+| `TimeoutError`        | `GrpcTimeoutException`      | DEADLINE_EXCEEDED (4) |
+| `ValidationError`     | `GrpcValidationException`   | INVALID_ARGUMENT (3)  |
+| Generic `Error`       | `GrpcInternalException`     | INTERNAL (13)         |
 
 ### Basic Usage
 
@@ -286,11 +536,13 @@ import { GrpcExceptionFilter } from '@ecom-co/grpc';
 app.useGlobalFilters(new GrpcExceptionFilter());
 
 // With options
-app.useGlobalFilters(new GrpcExceptionFilter({
-    enableLogging: true,
-    exposeInternalErrors: process.env.NODE_ENV !== 'production',
-    defaultErrorMessage: 'An unexpected error occurred'
-}));
+app.useGlobalFilters(
+    new GrpcExceptionFilter({
+        enableLogging: true,
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+        defaultErrorMessage: 'An unexpected error occurred',
+    }),
+);
 ```
 
 ### Advanced Configuration
@@ -299,17 +551,19 @@ app.useGlobalFilters(new GrpcExceptionFilter({
 import { GrpcExceptionFilter, GrpcCustomException } from '@ecom-co/grpc';
 
 // Custom error mappings
-app.useGlobalFilters(new GrpcExceptionFilter({
-    customErrorMappings: {
-        'DatabaseConnectionError': GrpcUnavailableException,
-        'BusinessLogicError': GrpcBadRequestException,
-        'CustomError': GrpcCustomException
-    },
-    enableLogging: true,
-    exposeInternalErrors: process.env.NODE_ENV !== 'production',
-    defaultErrorMessage: 'Service temporarily unavailable',
-    logger: new Logger('CustomGrpcFilter')
-}));
+app.useGlobalFilters(
+    new GrpcExceptionFilter({
+        customErrorMappings: {
+            DatabaseConnectionError: GrpcUnavailableException,
+            BusinessLogicError: GrpcBadRequestException,
+            CustomError: GrpcCustomException,
+        },
+        enableLogging: true,
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+        defaultErrorMessage: 'Service temporarily unavailable',
+        logger: new Logger('CustomGrpcFilter'),
+    }),
+);
 ```
 
 ### Runtime Configuration
@@ -319,13 +573,13 @@ import { GrpcExceptionFilter } from '@ecom-co/grpc';
 
 const filter = new GrpcExceptionFilter({
     enableLogging: true,
-    exposeInternalErrors: false
+    exposeInternalErrors: false,
 });
 
 // Update options at runtime
 filter.updateOptions({
     enableLogging: false,
-    exposeInternalErrors: true
+    exposeInternalErrors: true,
 });
 
 // Get current options
@@ -336,6 +590,7 @@ console.log('Current options:', currentOptions);
 ### Exception Handling Examples
 
 #### HTTP Exception Transformation
+
 ```typescript
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
@@ -363,6 +618,7 @@ export class UserController {
 ```
 
 #### Validation Error Handling
+
 ```typescript
 import { ValidationError } from 'class-validator';
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
@@ -384,6 +640,7 @@ export class UserController {
 ```
 
 #### Custom Error Handling
+
 ```typescript
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
 
@@ -412,11 +669,13 @@ export class UserController {
 }
 
 // Configure filter with custom mapping
-app.useGlobalFilters(new GrpcExceptionFilter({
-    customErrorMappings: {
-        'DatabaseConnectionError': GrpcUnavailableException
-    }
-}));
+app.useGlobalFilters(
+    new GrpcExceptionFilter({
+        customErrorMappings: {
+            DatabaseConnectionError: GrpcUnavailableException,
+        },
+    }),
+);
 ```
 
 ### Error Response Structure
@@ -458,30 +717,32 @@ The filter transforms exceptions into standardized gRPC error responses:
 ### Best Practices
 
 #### 1. Configure for Environment
+
 ```typescript
 const filter = new GrpcExceptionFilter({
     enableLogging: true,
     exposeInternalErrors: process.env.NODE_ENV !== 'production',
-    defaultErrorMessage: process.env.NODE_ENV === 'production' 
-        ? 'Service temporarily unavailable' 
-        : 'An unexpected error occurred'
+    defaultErrorMessage:
+        process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : 'An unexpected error occurred',
 });
 ```
 
 #### 2. Use Custom Error Mappings
+
 ```typescript
 // Define custom error mappings for domain-specific errors
 const filter = new GrpcExceptionFilter({
     customErrorMappings: {
-        'UserNotFoundError': GrpcNotFoundException,
-        'InvalidCredentialsError': GrpcUnauthorizedException,
-        'RateLimitExceededError': GrpcResourceExhaustedException,
-        'ServiceUnavailableError': GrpcUnavailableException
-    }
+        UserNotFoundError: GrpcNotFoundException,
+        InvalidCredentialsError: GrpcUnauthorizedException,
+        RateLimitExceededError: GrpcResourceExhaustedException,
+        ServiceUnavailableError: GrpcUnavailableException,
+    },
 });
 ```
 
 #### 3. Handle Specific Exception Types
+
 ```typescript
 @GrpcMethod('user', 'getUser')
 async getUser(data: { id: string }) {
@@ -500,11 +761,12 @@ async getUser(data: { id: string }) {
 ```
 
 #### 4. Monitor and Log Errors
+
 ```typescript
 const filter = new GrpcExceptionFilter({
     enableLogging: true,
     logger: new Logger('GrpcErrorMonitor'),
-    exposeInternalErrors: process.env.NODE_ENV !== 'production'
+    exposeInternalErrors: process.env.NODE_ENV !== 'production',
 });
 
 // The filter will automatically log all exceptions with details
@@ -513,51 +775,62 @@ const filter = new GrpcExceptionFilter({
 ### Integration with Other Filters
 
 ```typescript
-import { GrpcExceptionFilter, HttpGrpcExceptionFilter } from '@ecom-co/grpc';
+import { GrpcExceptionFilter, GrpcClientExceptionFilter } from '@ecom-co/grpc';
 
 // For gRPC services
-app.useGlobalFilters(new GrpcExceptionFilter({
-    enableLogging: true,
-    exposeInternalErrors: process.env.NODE_ENV !== 'production'
-}));
+app.useGlobalFilters(
+    new GrpcExceptionFilter({
+        enableLogging: true,
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+    }),
+);
 
 // For HTTP services that call gRPC
-app.useGlobalFilters(new HttpGrpcExceptionFilter({
-    enableDetailedLogging: true,
-    isDevelopment: process.env.NODE_ENV !== 'production'
-}));
+app.useGlobalFilters(
+    new GrpcClientExceptionFilter({
+        enableDetailedLogging: true,
+        enableStackTrace: process.env.NODE_ENV !== 'production',
+        includeMetadata: false,
+        isDevelopment: process.env.NODE_ENV !== 'production',
+        logLevel: 'error',
+        defaultErrorMessage: 'Service temporarily unavailable',
+        exposeInternalErrors: process.env.NODE_ENV !== 'production',
+    }),
+);
 ```
+
+````
 
 ## gRPC to HTTP Error Mapping
 
-The `HttpGrpcExceptionFilter` provides comprehensive mapping from gRPC status codes to HTTP status codes:
+The `GrpcClientExceptionFilter` provides comprehensive mapping from gRPC status codes to HTTP status codes:
 
-| gRPC Status | HTTP Status | Description |
-|-------------|-------------|-------------|
-| `OK` (0) | 200 | Success |
-| `CANCELLED` (1) | 408 | Request Timeout |
-| `UNKNOWN` (2) | 500 | Internal Server Error |
-| `INVALID_ARGUMENT` (3) | 400 | Bad Request |
-| `DEADLINE_EXCEEDED` (4) | 408 | Request Timeout |
-| `NOT_FOUND` (5) | 404 | Not Found |
-| `ALREADY_EXISTS` (6) | 409 | Conflict |
-| `PERMISSION_DENIED` (7) | 403 | Forbidden |
-| `RESOURCE_EXHAUSTED` (8) | 429 | Too Many Requests |
-| `FAILED_PRECONDITION` (9) | 412 | Precondition Failed |
-| `ABORTED` (10) | 409 | Conflict |
-| `OUT_OF_RANGE` (11) | 400 | Bad Request |
-| `UNIMPLEMENTED` (12) | 501 | Not Implemented |
-| `INTERNAL` (13) | 500 | Internal Server Error |
-| `UNAVAILABLE` (14) | 503 | Service Unavailable |
-| `DATA_LOSS` (15) | 500 | Internal Server Error |
-| `UNAUTHENTICATED` (16) | 401 | Unauthorized |
+| gRPC Status               | HTTP Status | Description           |
+| ------------------------- | ----------- | --------------------- |
+| `OK` (0)                  | 200         | Success               |
+| `CANCELLED` (1)           | 408         | Request Timeout       |
+| `UNKNOWN` (2)             | 500         | Internal Server Error |
+| `INVALID_ARGUMENT` (3)    | 400         | Bad Request           |
+| `DEADLINE_EXCEEDED` (4)   | 408         | Request Timeout       |
+| `NOT_FOUND` (5)           | 404         | Not Found             |
+| `ALREADY_EXISTS` (6)      | 409         | Conflict              |
+| `PERMISSION_DENIED` (7)   | 403         | Forbidden             |
+| `RESOURCE_EXHAUSTED` (8)  | 429         | Too Many Requests     |
+| `FAILED_PRECONDITION` (9) | 412         | Precondition Failed   |
+| `ABORTED` (10)            | 409         | Conflict              |
+| `OUT_OF_RANGE` (11)       | 400         | Bad Request           |
+| `UNIMPLEMENTED` (12)      | 501         | Not Implemented       |
+| `INTERNAL` (13)           | 500         | Internal Server Error |
+| `UNAVAILABLE` (14)        | 503         | Service Unavailable   |
+| `DATA_LOSS` (15)          | 500         | Internal Server Error |
+| `UNAUTHENTICATED` (16)    | 401         | Unauthorized          |
 
 ### Network Error Handling
 
 The filter also handles various network and connection errors:
 
 - **Connection Refused**: `ECONNREFUSED` → 503 Service Unavailable
-- **Host Not Found**: `ENOTFOUND` → 503 Service Unavailable  
+- **Host Not Found**: `ENOTFOUND` → 503 Service Unavailable
 - **Connection Timeout**: `ETIMEDOUT` → 408 Request Timeout
 - **Channel Closed**: → 503 Service Unavailable
 - **Service Definition Not Found**: → 500 Internal Server Error
@@ -569,8 +842,9 @@ The library provides a comprehensive set of gRPC exception classes that map to s
 ### Available Exception Classes
 
 #### Basic Exceptions
+
 ```typescript
-import { 
+import {
     GrpcBadRequestException,
     GrpcUnauthorizedException,
     GrpcForbiddenException,
@@ -580,7 +854,7 @@ import {
     GrpcTimeoutException,
     GrpcInternalException,
     GrpcUnavailableException,
-    GrpcResourceExhaustedException
+    GrpcResourceExhaustedException,
 } from '@ecom-co/grpc';
 
 // 400 Bad Request
@@ -609,9 +883,10 @@ throw new GrpcUnavailableException('Service temporarily unavailable', 30);
 
 // 429 Too Many Requests
 throw new GrpcResourceExhaustedException('Rate limit exceeded', 'requests', 100, 150);
-```
+````
 
 #### Advanced Exceptions
+
 ```typescript
 import {
     GrpcCancelledException,
@@ -619,7 +894,7 @@ import {
     GrpcDataLossException,
     GrpcFailedPreconditionException,
     GrpcNotImplementedException,
-    GrpcOutOfRangeException
+    GrpcOutOfRangeException,
 } from '@ecom-co/grpc';
 
 // Request Cancellation
@@ -642,6 +917,7 @@ throw new GrpcOutOfRangeException('Page number out of range', { actual: 100, min
 ```
 
 ### Validation Exception
+
 ```typescript
 import { GrpcValidationException } from '@ecom-co/grpc';
 
@@ -655,6 +931,7 @@ throw new GrpcValidationException('Email validation failed', ['Invalid email for
 ### Utility Functions
 
 #### Convert HTTP Status to gRPC Exception
+
 ```typescript
 import { createGrpcExceptionFromHttp } from '@ecom-co/grpc';
 
@@ -667,6 +944,7 @@ const exception2 = createGrpcExceptionFromHttp(429, 'Rate limit exceeded');
 ```
 
 #### Type Guard
+
 ```typescript
 import { isGrpcException } from '@ecom-co/grpc';
 
@@ -711,6 +989,7 @@ All gRPC exceptions include structured error details:
 ### Best Practices
 
 #### 1. Use Specific Exceptions
+
 ```typescript
 // ✅ Good: Use specific exception
 if (!user) {
@@ -724,12 +1003,13 @@ if (!user) {
 ```
 
 #### 2. Include Relevant Details
+
 ```typescript
 // ✅ Good: Include helpful details
 throw new GrpcBadRequestException('Invalid input', {
     field: 'email',
     value: 'invalid-email',
-    expected: 'valid email format'
+    expected: 'valid email format',
 });
 
 // ❌ Avoid: Generic message
@@ -737,6 +1017,7 @@ throw new GrpcBadRequestException('Invalid input');
 ```
 
 #### 3. Handle Exceptions Properly
+
 ```typescript
 try {
     const result = await userService.createUser(userData);
@@ -746,18 +1027,19 @@ try {
         // Handle conflict specifically
         throw new GrpcConflictException('User already exists', 'email');
     }
-    
+
     // Re-throw other gRPC exceptions
     if (isGrpcException(error)) {
         throw error;
     }
-    
+
     // Wrap unknown errors
     throw new GrpcInternalException('Unexpected error occurred', error);
 }
 ```
 
 #### 4. Use Utility Functions for HTTP Integration
+
 ```typescript
 // When integrating with HTTP services
 try {
@@ -766,12 +1048,9 @@ try {
 } catch (error) {
     if (error.response) {
         // Convert HTTP error to gRPC exception
-        throw createGrpcExceptionFromHttp(
-            error.response.status,
-            error.response.data.message || 'HTTP request failed'
-        );
+        throw createGrpcExceptionFromHttp(error.response.status, error.response.data.message || 'HTTP request failed');
     }
-    
+
     // Handle network errors
     throw new GrpcUnavailableException('Service unavailable');
 }
@@ -780,15 +1059,11 @@ try {
 ## Example Usage
 
 ### Basic gRPC Service
+
 ```typescript
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
-import { 
-    GrpcMethod, 
-    GrpcExceptionFilter, 
-    GrpcValidationPipe,
-    GrpcLoggingInterceptor 
-} from '@ecom-co/grpc';
+import { GrpcMethod, GrpcExceptionFilter, GrpcValidationPipe, GrpcLoggingInterceptor } from '@ecom-co/grpc';
 import { AppModule } from './app.module';
 
 // Your service
@@ -797,7 +1072,7 @@ export class UserService {
     @GrpcMethod('user', 'getUser', {
         description: 'Get user by ID',
         requiresAuth: true,
-        rateLimit: 100
+        rateLimit: 100,
     })
     async getUser(data: { id: string }) {
         if (!data.id) {
@@ -818,20 +1093,26 @@ async function bootstrap() {
         },
     });
 
-    app.useGlobalFilters(new GrpcExceptionFilter({
-        enableLogging: true,
-        exposeInternalErrors: process.env.NODE_ENV !== 'production'
-    }));
-    app.useGlobalPipes(new GrpcValidationPipe({
-        enableErrorLogging: true,
-        stripUnknownProperties: true
-    }));
-    app.useGlobalInterceptors(new GrpcLoggingInterceptor({
-        logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info',
-        logRequest: process.env.NODE_ENV !== 'production',
-        logResponse: process.env.NODE_ENV === 'development'
-    }));
-    
+    app.useGlobalFilters(
+        new GrpcExceptionFilter({
+            enableLogging: true,
+            exposeInternalErrors: process.env.NODE_ENV !== 'production',
+        }),
+    );
+    app.useGlobalPipes(
+        new GrpcValidationPipe({
+            enableErrorLogging: true,
+            stripUnknownProperties: true,
+        }),
+    );
+    app.useGlobalInterceptors(
+        new GrpcLoggingInterceptor({
+            logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info',
+            logRequest: process.env.NODE_ENV !== 'production',
+            logResponse: process.env.NODE_ENV === 'development',
+        }),
+    );
+
     await app.listen();
 }
 
@@ -839,35 +1120,40 @@ bootstrap();
 ```
 
 ### HTTP Service with gRPC Client
+
 ```typescript
 import { NestFactory } from '@nestjs/core';
-import { 
-    HttpGrpcExceptionFilter,
-    GrpcValidationPipe,
-    GrpcLoggingInterceptor 
-} from '@ecom-co/grpc';
+import { GrpcClientExceptionFilter, GrpcValidationPipe, GrpcLoggingInterceptor } from '@ecom-co/grpc';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     // Configure gRPC to HTTP exception filter
-    app.useGlobalFilters(new HttpGrpcExceptionFilter({
-        enableDetailedLogging: true,
-        enableStackTrace: process.env.NODE_ENV !== 'production',
-        includeMetadata: false,
-        isDevelopment: process.env.NODE_ENV !== 'production',
-        logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'debug'
-    }));
+    app.useGlobalFilters(
+        new GrpcClientExceptionFilter({
+            enableDetailedLogging: true,
+            enableStackTrace: process.env.NODE_ENV !== 'production',
+            includeMetadata: false,
+            isDevelopment: process.env.NODE_ENV !== 'production',
+            logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'debug',
+            defaultErrorMessage: 'Service temporarily unavailable',
+            exposeInternalErrors: process.env.NODE_ENV !== 'production',
+        }),
+    );
 
-    app.useGlobalPipes(new GrpcValidationPipe({
-        enableErrorLogging: true,
-        stripUnknownProperties: true
-    }));
+    app.useGlobalPipes(
+        new GrpcValidationPipe({
+            enableErrorLogging: true,
+            stripUnknownProperties: true,
+        }),
+    );
 
-    app.useGlobalInterceptors(new GrpcLoggingInterceptor({
-        logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info'
-    }));
+    app.useGlobalInterceptors(
+        new GrpcLoggingInterceptor({
+            logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info',
+        }),
+    );
 
     await app.listen(3000);
 }
@@ -877,7 +1163,7 @@ bootstrap();
 
 ### Error Response Format
 
-The `HttpGrpcExceptionFilter` returns structured error responses:
+The `GrpcClientExceptionFilter` returns structured error responses:
 
 ```json
 {
@@ -886,10 +1172,7 @@ The `HttpGrpcExceptionFilter` returns structured error responses:
     "error": "VALIDATION_ERROR",
     "path": "/api/users",
     "timestamp": "2024-01-15T10:30:00.000Z",
-    "errors": [
-        "User ID is required",
-        "Email format is invalid"
-    ],
+    "errors": ["User ID is required", "Email format is invalid"],
     "fieldErrors": {
         "email": {
             "format": "Invalid email format"
@@ -905,6 +1188,7 @@ The `HttpGrpcExceptionFilter` returns structured error responses:
 ## Advanced Features
 
 ### Circuit Breaker
+
 ```typescript
 import { CircuitBreakerModule } from '@ecom-co/grpc';
 
@@ -916,6 +1200,7 @@ export class AppModule {}
 ```
 
 ### Distributed Tracing
+
 ```typescript
 import { TracingModule } from '@ecom-co/grpc';
 

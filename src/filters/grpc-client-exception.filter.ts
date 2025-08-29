@@ -28,10 +28,35 @@ export enum GrpcStatus {
     UNKNOWN = 2,
 }
 
+// Interface cho gRPC Client Exception Filter Options
+export interface GrpcClientExceptionFilterOptions {
+    defaultErrorMessage?: string; // Default error message for unknown errors
+    enableDetailedLogging?: boolean; // Enable detailed error logging
+    enableStackTrace?: boolean; // Include stack traces in logs
+    exposeInternalErrors?: boolean; // Expose internal error details in production
+    includeMetadata?: boolean; // Include gRPC metadata in logs
+    isDevelopment?: boolean; // Development mode for debug info
+    logLevel?: 'debug' | 'error' | 'warn'; // Logging level
+}
+
 // Interface cho gRPC Error
 @Catch(GrpcClientException)
 export class GrpcClientFilter implements ExceptionFilter {
     private readonly logger = new Logger(GrpcClientFilter.name);
+    private options: Required<GrpcClientExceptionFilterOptions>;
+
+    constructor(options: GrpcClientExceptionFilterOptions = {}) {
+        this.options = {
+            defaultErrorMessage: 'An unexpected error occurred',
+            enableDetailedLogging: true,
+            enableStackTrace: false,
+            exposeInternalErrors: false,
+            includeMetadata: false,
+            isDevelopment: false,
+            logLevel: 'error',
+            ...options,
+        };
+    }
 
     private convertGrpcError(error: GrpcClientException): {
         details?: unknown;
@@ -92,9 +117,11 @@ export class GrpcClientFilter implements ExceptionFilter {
                 fieldErrors: {},
             };
         } catch (parseError: unknown) {
-            this.logger.debug(
-                `Failed to parse validation error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
-            );
+            if (this.options.enableDetailedLogging) {
+                this.logger.debug(
+                    `Failed to parse validation error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
+                );
+            }
 
             // If parsing fails, treat as simple error message
             return {
@@ -109,7 +136,9 @@ export class GrpcClientFilter implements ExceptionFilter {
         const response = ctx.getResponse<Response>();
 
         if (response.headersSent) {
-            this.logger.warn('Response already sent, cannot handle exception');
+            if (this.options.enableDetailedLogging) {
+                this.logger.warn('Response already sent, cannot handle exception');
+            }
 
             return;
         }
@@ -138,6 +167,15 @@ export class GrpcClientFilter implements ExceptionFilter {
 
         if (fieldErrors) {
             responseBody.fieldErrors = fieldErrors;
+        }
+
+        // Add debug information in development mode
+        if (this.options.isDevelopment) {
+            responseBody.debug = {
+                grpcCode: exception.code,
+                originalError: `${error}: ${message}`,
+                stackTrace: this.options.enableStackTrace ? exception.stack : undefined,
+            };
         }
 
         response.status(status).json(responseBody);
@@ -198,7 +236,9 @@ export class GrpcClientFilter implements ExceptionFilter {
                 return {
                     status: HttpStatus.INTERNAL_SERVER_ERROR,
                     error: 'INTERNAL',
-                    message: error.details || 'Internal server error',
+                    message: this.options.exposeInternalErrors
+                        ? error.details || 'Internal server error'
+                        : this.options.defaultErrorMessage,
                 };
 
             case GrpcStatus.INVALID_ARGUMENT:
@@ -274,21 +314,37 @@ export class GrpcClientFilter implements ExceptionFilter {
                 return {
                     status: HttpStatus.INTERNAL_SERVER_ERROR,
                     error: 'UNKNOWN',
-                    message: error.details || 'Unknown error occurred',
+                    message: this.options.exposeInternalErrors
+                        ? error.details || 'Unknown error occurred'
+                        : this.options.defaultErrorMessage,
                 };
 
             default:
                 return {
                     status: HttpStatus.INTERNAL_SERVER_ERROR,
                     error: 'UNKNOWN_GRPC_CODE',
-                    message: error.details || `Unknown gRPC error code: ${String(error.code)}`,
+                    message: this.options.exposeInternalErrors
+                        ? error.details || `Unknown gRPC error code: ${String(error.code)}`
+                        : this.options.defaultErrorMessage,
                 };
         }
     }
 
     private logException(exception: GrpcClientException, request: { method?: string; url?: string }): void {
+        if (!this.options.enableDetailedLogging) {
+            // Basic logging only
+            this.logger.error('gRPC Exception caught:', {
+                code: exception.code,
+                message: exception.message,
+                method: request?.method,
+                path: request?.url,
+            });
+
+            return;
+        }
+
         try {
-            const logError = {
+            const logError: Record<string, unknown> = {
                 code: exception.code,
                 details: exception.details,
                 detailsConstructor: exception.details?.constructor?.name,
@@ -301,18 +357,51 @@ export class GrpcClientFilter implements ExceptionFilter {
                 timestamp: new Date().toISOString(),
             };
 
-            this.logger.error('gRPC Exception caught:', logError);
+            // Add metadata if enabled
+            if (this.options.includeMetadata && exception.metadata) {
+                logError.metadata = exception.metadata;
+            }
 
-            // Log raw details for debugging
-            this.logger.error('Raw details:', {
-                details: exception.details,
-                detailsStringified: JSON.stringify(exception.details, null, 2),
-            });
+            // Add stack trace if enabled
+            if (this.options.enableStackTrace) {
+                logError.stackTrace = exception.stack;
+            }
+
+            // Use appropriate log level
+            if (this.options.logLevel === 'debug') {
+                this.logger.debug('gRPC Exception caught:', logError);
+            } else if (this.options.logLevel === 'warn') {
+                this.logger.warn('gRPC Exception caught:', logError);
+            } else {
+                this.logger.error('gRPC Exception caught:', logError);
+            }
+
+            // Log raw details for debugging in development
+            if (this.options.isDevelopment) {
+                this.logger.debug('Raw details:', {
+                    details: exception.details,
+                    detailsStringified: JSON.stringify(exception.details, null, 2),
+                });
+            }
         } catch {
             this.logger.error('Logging failed, basic error:', {
                 message: exception.message,
                 timestamp: new Date().toISOString(),
             });
         }
+    }
+
+    /**
+     * Update filter options at runtime
+     */
+    updateOptions(newOptions: Partial<GrpcClientExceptionFilterOptions>): void {
+        this.options = { ...this.options, ...newOptions };
+    }
+
+    /**
+     * Get current filter options
+     */
+    getOptions(): Required<GrpcClientExceptionFilterOptions> {
+        return { ...this.options };
     }
 }
