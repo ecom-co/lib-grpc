@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Logger } from '@nestjs/common';
 
-import { forEach, get, isObject, map, set } from 'lodash';
+import { forEach, get, includes, isObject, map, set } from 'lodash';
 
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry as rxRetry, timeout } from 'rxjs/operators';
@@ -15,7 +15,9 @@ import type { ClientGrpc } from '@nestjs/microservices';
 
 export interface GrpcOptions {
     enableLogging?: boolean;
+    maxRetryDelay?: number; // maximum delay between retries in milliseconds
     retry?: number;
+    retryableCodes?: number[]; // gRPC status codes that should be retried
     timeout?: number; // milliseconds
 }
 
@@ -39,7 +41,17 @@ export class GrpcClientException extends Error {
 export class WrappedGrpc implements ClientGrpc {
     private readonly defaultOptions: Required<GrpcOptions> = {
         enableLogging: true,
+        maxRetryDelay: 10000, // 10 seconds default
         retry: 0,
+        retryableCodes: [
+            1, // CANCELLED
+            4, // DEADLINE_EXCEEDED
+            8, // RESOURCE_EXHAUSTED
+            10, // ABORTED
+            13, // INTERNAL
+            14, // UNAVAILABLE
+            15, // DATA_LOSS
+        ],
         timeout: 30000, // 30 seconds default
     };
 
@@ -118,7 +130,34 @@ export class WrappedGrpc implements ClientGrpc {
 
         // Add retry if configured
         if (this.defaultOptions.retry > 0) {
-            pipeOps.push(rxRetry(this.defaultOptions.retry));
+            pipeOps.push(
+                rxRetry({
+                    count: this.defaultOptions.retry,
+                    delay: (error, retryCount) => {
+                        // Only retry if error code is in retryable codes
+                        const errorCode = get(error, 'code');
+
+                        if (errorCode && includes(this.defaultOptions.retryableCodes, errorCode)) {
+                            if (this.defaultOptions.enableLogging) {
+                                this.logger.warn(
+                                    `Retrying ${serviceName}.${methodName} (attempt ${retryCount + 1}/${this.defaultOptions.retry + 1}) due to error code: ${error.code}`,
+                                );
+                            }
+
+                            return new Observable((subscriber) => {
+                                setTimeout(
+                                    () => subscriber.next(undefined),
+                                    Math.min(1000 * Math.pow(2, retryCount), this.defaultOptions.maxRetryDelay),
+                                );
+                                subscriber.complete();
+                            });
+                        }
+
+                        // Don't retry for non-retryable errors
+                        throw error;
+                    },
+                }),
+            );
         }
 
         // Add error handling

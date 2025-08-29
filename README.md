@@ -290,7 +290,7 @@ The gRPC Client module provides enhanced client capabilities with built-in loggi
 ### Features
 
 - **Enhanced Logging**: Automatic request/response logging with sensitive data sanitization
-- **Retry Mechanism**: Configurable retry logic for failed requests
+- **Retry Mechanism**: Configurable retry logic for failed requests with selective retryable error codes
 - **Timeout Handling**: Automatic timeout management for long-running requests
 - **Error Wrapping**: Consistent error handling with `GrpcClientException`
 - **Proxy-based Wrapping**: Transparent service method wrapping without code changes
@@ -307,6 +307,8 @@ const wrappedClient = createWrappedGrpc(originalClientGrpc, {
     enableLogging: true,
     retry: 3,
     timeout: 30000, // 30 seconds
+    maxRetryDelay: 8000, // 8 seconds max delay between retries
+    retryableCodes: [4, 8, 14], // Only retry timeout, rate limit, and unavailable errors
 });
 
 // Use the wrapped client
@@ -323,6 +325,16 @@ const options: GrpcOptions = {
     enableLogging: process.env.NODE_ENV !== 'production',
     retry: 5,
     timeout: 60000, // 1 minute
+    maxRetryDelay: 10000, // 10 seconds max delay between retries
+    retryableCodes: [
+        1, // CANCELLED
+        4, // DEADLINE_EXCEEDED
+        8, // RESOURCE_EXHAUSTED
+        10, // ABORTED
+        13, // INTERNAL
+        14, // UNAVAILABLE
+        15, // DATA_LOSS
+    ],
 };
 
 const wrappedClient = createWrappedGrpc(originalClientGrpc, options);
@@ -443,6 +455,12 @@ const longRunningOptions: GrpcOptions = {
 const options: GrpcOptions = {
     retry: 3, // Retry up to 3 times
     timeout: 10000, // 10 second timeout per attempt
+    maxRetryDelay: 5000, // 5 seconds max delay between retries
+    retryableCodes: [
+        4, // DEADLINE_EXCEEDED - timeout errors
+        8, // RESOURCE_EXHAUSTED - rate limiting
+        14, // UNAVAILABLE - service temporarily down
+    ],
 };
 ```
 
@@ -461,6 +479,7 @@ export class UserService {
             enableLogging: true,
             retry: 2,
             timeout: 30000,
+            maxRetryDelay: 5000, // 5 seconds max delay
         });
     }
 
