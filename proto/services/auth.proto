@@ -1,0 +1,89 @@
+syntax = "proto3";
+package auth;
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+service AuthService {
+  rpc Login (LoginRequest) returns (AuthResponse) {}
+  rpc Register (RegisterRequest) returns (AuthResponse) {}
+  rpc RefreshToken (google.protobuf.Empty) returns (AuthResponse) {}
+  rpc GetProfile (google.protobuf.Empty) returns (GetProfileResponse) {}
+  rpc CheckAccess (CheckAccessRequest) returns (CheckAccessResponse) {}
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  map<string, string> metadata = 3; // optional metadata
+}
+
+message RegisterRequest {
+  string name = 1;
+  string email = 2;
+  string username = 3;
+  string password = 4;
+  map<string, string> metadata = 5; // optional metadata
+}
+
+message GetProfileResponse {
+  AuthUser user = 1;
+  string message = 2;
+}
+
+message TokenMetadata {
+  int64 exp = 1;
+  int64 iat = 2;
+  string jti = 3;
+  string ssid = 4;
+}
+
+message TokenResponse {
+  TokenMetadata metadata = 1;
+  string token = 2;
+}
+
+message AuthUser {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  bool isActive = 4;
+  string firstName = 5;
+  string fullName = 6;
+  string lastName = 7;
+  string createdAt = 8;
+  string updatedAt = 9;
+}
+
+message AuthResponse {
+  TokenResponse accessToken = 1;
+  TokenResponse refreshToken = 2;
+  string ssid = 3;
+  AuthUser user = 4;
+}
+
+
+// logic is represented as a string: "AND" | "OR"
+
+message PermissionGroup {
+  repeated string permissions = 1;
+}
+
+message ResourceRef {
+  google.protobuf.StringValue id = 1;   // optional
+  google.protobuf.StringValue type = 2; // optional
+}
+
+message CheckAccessRequest {
+  repeated string permissions = 1;          // flat permissions
+  repeated PermissionGroup groups = 2;      // groups of permissions
+  string logic = 3;                         // AND | OR
+  ResourceRef resource = 4;                 // optional resource reference
+}
+
+message CheckAccessResponse {
+  bool allowed = 1;
+  string reason = 2; // optional explanation
+  AuthUser user = 3; // current user when available
+}
+
+

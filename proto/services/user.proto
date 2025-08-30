@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc CreateUser (CreateUserRequest) returns (ApiResponseData) {}
+  rpc GetUser (GetUserRequest) returns (ApiResponseData) {}
+  rpc UpdateUser (UpdateUserRequest) returns (ApiResponseData) {}
+  rpc DeleteUser (DeleteUserRequest) returns (ApiResponseData) {}
+  rpc ListUsers (ListUsersRequest) returns (ApiPaginatedResponseData) {}
+}
+
+message CreateUserRequest {
+  string firstName = 1;
+  string lastName = 2;
+  string username = 3;
+  string email = 4;
+  string password = 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string username = 4;
+  string email = 5;
+  bool isActive = 6;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message UserResponseDto {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string username = 4;
+  string email = 5;
+  string fullName = 6;
+  bool isActive = 7;
+  string createdAt = 8;
+  string updatedAt = 9;
+}
+
+message DeleteResponseData {
+  bool success = 1;
+  string message = 2;
+}
+
+// API Response wrapper for single user operations
+message ApiResponseData {
+  UserResponseDto data = 1;          // For user operations
+  DeleteResponseData deleteData = 2;  // For delete operations
+  string message = 3;
+  int32 statusCode = 4;
+}
+
+message Paging {
+  int32 page = 1;
+  int32 limit = 2;
+  int32 total = 3;
+  int32 totalPages = 4;
+  int32 currentPageSize = 5;
+  int32 startItem = 6;
+  int32 endItem = 7;
+  bool hasNextPage = 8;
+  bool hasPreviousPage = 9;
+  int32 firstPage = 10;
+}
+
+// API Response wrapper for paginated operations
+message ApiPaginatedResponseData {
+  repeated UserResponseDto data = 1;
+  Paging paging = 2;
+  string message = 3;
+  int32 statusCode = 4;
+}
