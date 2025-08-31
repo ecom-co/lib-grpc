@@ -1,124 +1,124 @@
-# Documentation Structure
+# Cấu Trúc Tài Liệu
 
-This documentation is organized using Docusaurus standards with comprehensive coverage of the `@ecom-co/grpc` library.
+Tài liệu này được tổ chức theo tiêu chuẩn Docusaurus với phạm vi bao phủ toàn diện cho thư viện `@ecom-co/grpc`.
 
-## Table of Contents
+## Mục Lục
 
-### 📚 Getting Started
-- **[Introduction](./introduction.md)** - Overview, architecture, and key features
-- **[Quick Start Guide](./quick-start.md)** - Get up and running in minutes
-- **[Usage Examples](./usage-examples.md)** - Comprehensive examples and patterns
+### 📚 Bắt Đầu
+- **[Giới Thiệu](./introduction.md)** - Tổng quan, kiến trúc và tính năng chính
+- **[Hướng Dẫn Nhanh](./quick-start.md)** - Khởi động trong vài phút
+- **[Ví Dụ Sử Dụng](./usage-examples.md)** - Ví dụ và mẫu toàn diện
 
-### 🛠️ Core Features  
-- **[Global Middleware](./global-middleware.md)** - Centralized middleware configuration
-- **[Client Module](./client-module.md)** - Enhanced gRPC client with retry and timeout
-- **[Exception Handling](./exception-handling.md)** - Comprehensive error management
+### 🛠️ Tính Năng Cốt Lõi  
+- **[Global Middleware](./global-middleware.md)** - Cấu hình middleware tập trung
+- **[Client Module](./client-module.md)** - Client gRPC nâng cao với retry và timeout
+- **[Xử Lý Exception](./exception-handling.md)** - Quản lý lỗi toàn diện
 
-### 🚀 Advanced Features
-- **[Advanced Features](./advanced-features.md)** - Circuit breaker, tracing, monitoring
-- **[API Reference](./api-reference.md)** - Complete API documentation
+### 🚀 Tính Năng Nâng Cao
+- **[Tính Năng Nâng Cao](./advanced-features.md)** - Circuit breaker, tracing, monitoring
+- **[Tài Liệu API](./api-reference.md)** - Tài liệu API đầy đủ
 
-## Documentation Features
+## Đặc Điểm Tài Liệu
 
-### 📋 Comprehensive Coverage
-- ✅ **All Components Documented** - Every class, interface, and utility
-- ✅ **Detailed Configuration Tables** - All options with types and descriptions  
-- ✅ **Real-world Examples** - Practical usage scenarios
-- ✅ **Production Guidelines** - Best practices and performance tips
+### 📋 Bao Phủ Toàn Diện
+- ✅ **Tất Cả Component Được Tài Liệu** - Mọi class, interface và utility
+- ✅ **Bảng Cấu Hình Chi Tiết** - Tất cả tùy chọn với types và mô tả  
+- ✅ **Ví Dụ Thực Tế** - Các tình huống sử dụng thực tế
+- ✅ **Hướng Dẫn Production** - Best practices và tips hiệu suất
 
-### 🎯 Docusaurus Standards
-- ✅ **Info/Warning/Tip Blocks** - Important callouts throughout
-- ✅ **Mermaid Diagrams** - Visual architecture and flow diagrams
-- ✅ **Code Syntax Highlighting** - TypeScript with proper highlighting
-- ✅ **Responsive Tables** - Detailed configuration options
-- ✅ **Cross-references** - Linked navigation between topics
+### 🎯 Tiêu Chuẩn Docusaurus
+- ✅ **Khối Info/Warning/Tip** - Callouts quan trọng xuyên suốt
+- ✅ **Sơ Đồ Mermaid** - Sơ đồ kiến trúc và luồng hình ảnh
+- ✅ **Syntax Highlighting Code** - TypeScript với highlighting đúng cách
+- ✅ **Bảng Responsive** - Tùy chọn cấu hình chi tiết
+- ✅ **Tham Chiếu Chéo** - Điều hướng liên kết giữa các chủ đề
 
-### 🗺️ Visual Documentation
-- ✅ **Architecture Diagrams** - System overview and component relationships
-- ✅ **Flow Charts** - Request/response flows and error handling
-- ✅ **Sequence Diagrams** - Middleware execution order and tracing
-- ✅ **State Diagrams** - Circuit breaker states and transitions
+### 🗺️ Tài Liệu Hình Ảnh
+- ✅ **Sơ Đồ Kiến Trúc** - Tổng quan hệ thống và mối quan hệ component
+- ✅ **Biểu Đồ Luồng** - Luồng request/response và xử lý lỗi
+- ✅ **Sơ Đồ Sequence** - Thứ tự thực thi middleware và tracing
+- ✅ **Sơ Đồ Trạng Thái** - Trạng thái và chuyển đổi circuit breaker
 
-### 📊 Detailed Reference Tables
+### 📊 Bảng Tham Chiếu Chi Tiết
 
-#### Configuration Options Coverage
-- ✅ **GrpcOptions** - Client configuration with 5 detailed options
-- ✅ **GrpcExceptionFilterOptions** - Server exception handling with 5 options
-- ✅ **GrpcClientExceptionFilterOptions** - HTTP error handling with 7 options  
-- ✅ **GrpcValidationPipeOptions** - Request validation with 9 options
-- ✅ **GrpcLoggingInterceptorOptions** - Logging configuration with 4 options
-- ✅ **CircuitBreakerConfig** - Fault tolerance with 4 options
-- ✅ **TracingOptions** - Distributed tracing with 4 options
-- ✅ **All Decorator Options** - Complete coverage of decorator parameters
+#### Phạm Vi Bao Phủ Tùy Chọn Cấu Hình
+- ✅ **GrpcOptions** - Cấu hình client với 5 tùy chọn chi tiết
+- ✅ **GrpcExceptionFilterOptions** - Xử lý exception server với 5 tùy chọn
+- ✅ **GrpcClientExceptionFilterOptions** - Xử lý lỗi HTTP với 7 tùy chọn  
+- ✅ **GrpcValidationPipeOptions** - Validation request với 9 tùy chọn
+- ✅ **GrpcLoggingInterceptorOptions** - Cấu hình logging với 4 tùy chọn
+- ✅ **CircuitBreakerConfig** - Fault tolerance với 4 tùy chọn
+- ✅ **TracingOptions** - Distributed tracing với 4 tùy chọn
+- ✅ **Tất Cả Tùy Chọn Decorator** - Bao phủ hoàn chỉnh parameters decorator
 
-#### Exception Classes Coverage
-- ✅ **15 Exception Classes** - All gRPC status codes covered
-- ✅ **Constructor Parameters** - Detailed parameter descriptions
-- ✅ **Usage Examples** - Real-world exception handling patterns
-- ✅ **HTTP Mapping** - gRPC to HTTP status code conversion
+#### Phạm Vi Bao Phủ Exception Classes
+- ✅ **15 Exception Classes** - Tất cả gRPC status codes được bao phủ
+- ✅ **Constructor Parameters** - Mô tả parameters chi tiết
+- ✅ **Ví Dụ Sử Dụng** - Patterns xử lý exception thực tế
+- ✅ **HTTP Mapping** - Chuyển đổi gRPC sang HTTP status code
 
-#### API Methods Coverage  
-- ✅ **Client Methods** - WrappedGrpc complete API
-- ✅ **Filter Methods** - Runtime configuration updates
-- ✅ **Pipe Methods** - Validation customization
-- ✅ **Circuit Breaker Methods** - State management and metrics
-- ✅ **Tracing Methods** - Span management and logging
+#### Phạm Vi Bao Phủ API Methods  
+- ✅ **Client Methods** - API hoàn chỉnh WrappedGrpc
+- ✅ **Filter Methods** - Cập nhật cấu hình runtime
+- ✅ **Pipe Methods** - Tùy chỉnh validation
+- ✅ **Circuit Breaker Methods** - Quản lý state và metrics
+- ✅ **Tracing Methods** - Quản lý span và logging
 
-## Key Documentation Highlights
+## Điểm Nổi Bật Tài Liệu Chính
 
-### 🔥 Advanced Examples
-- **Complete gRPC Service Setup** - From proto to production
-- **HTTP-gRPC Integration** - Hybrid architecture patterns
-- **Error Recovery Strategies** - Resilient service patterns
-- **Performance Optimization** - Caching and monitoring
-- **Testing Strategies** - Unit and integration testing
+### 🔥 Ví Dụ Nâng Cao
+- **Setup gRPC Service Hoàn Chỉnh** - Từ proto đến production
+- **Tích Hợp HTTP-gRPC** - Patterns kiến trúc hybrid
+- **Chiến Lược Error Recovery** - Patterns service resilient
+- **Tối Ưu Hiệu Suất** - Caching và monitoring
+- **Chiến Lược Testing** - Unit và integration testing
 
-### 🛡️ Production Ready
-- **Environment-specific Configuration** - Dev/staging/production setups
-- **Security Best Practices** - Error exposure and sensitive data handling
-- **Performance Monitoring** - Metrics collection and alerting
-- **Health Check Systems** - Service monitoring and observability
+### 🛡️ Sẵn Sàng Production
+- **Cấu Hình Theo Môi Trường** - Setup dev/staging/production
+- **Best Practices Bảo Mật** - Xử lý error exposure và sensitive data
+- **Monitoring Hiệu Suất** - Thu thập metrics và alerting
+- **Hệ Thống Health Check** - Monitoring service và observability
 
-### 📈 Enterprise Features
-- **Circuit Breaker Patterns** - Fault tolerance implementation
-- **Distributed Tracing** - End-to-end request visibility
-- **Performance Monitoring** - Method-level performance tracking
-- **Caching Strategies** - Result caching with TTL management
+### 📈 Tính Năng Enterprise
+- **Patterns Circuit Breaker** - Triển khai fault tolerance
+- **Distributed Tracing** - Khả năng hiển thị request end-to-end
+- **Monitoring Hiệu Suất** - Theo dõi performance cấp method
+- **Chiến Lược Caching** - Result caching với quản lý TTL
 
-## Documentation Quality Standards
+## Tiêu Chuẩn Chất Lượng Tài Liệu
 
-### ✨ Writing Quality
-- Clear, concise explanations
-- Consistent terminology throughout
-- Progressive complexity (basic → advanced)
-- Real-world scenarios and use cases
+### ✨ Chất Lượng Viết
+- Giải thích rõ ràng, súc tích
+- Thuật ngữ nhất quán xuyên suốt
+- Độ phức tạp tăng dần (cơ bản → nâng cao)
+- Tình huống và use cases thực tế
 
-### 🎨 Visual Design
-- Consistent Mermaid diagram styling
-- Proper table formatting
-- Effective use of callout blocks
-- Clean code examples with syntax highlighting
+### 🎨 Thiết Kế Hình Ảnh
+- Styling sơ đồ Mermaid nhất quán
+- Định dạng bảng đúng cách
+- Sử dụng hiệu quả các khối callout
+- Ví dụ code sạch với syntax highlighting
 
-### 🔗 Navigation
-- Logical flow between sections
-- Cross-references and links
-- Table of contents in each section
-- Clear section hierarchy
+### 🔗 Điều Hướng
+- Luồng logic giữa các phần
+- Tham chiếu chéo và links
+- Mục lục trong mỗi phần
+- Phân cấp phần rõ ràng
 
-### 🧪 Code Quality
-- All examples are syntactically correct
-- TypeScript types and interfaces included
-- Error handling demonstrated
-- Best practices highlighted
+### 🧪 Chất Lượng Code
+- Tất cả ví dụ đều đúng cú pháp
+- Bao gồm TypeScript types và interfaces
+- Demonstrarte xử lý lỗi
+- Làm nổi bật best practices
 
-## Next Steps
+## Bước Tiếp Theo
 
-This documentation provides everything needed to:
+Tài liệu này cung cấp mọi thứ cần thiết để:
 
-1. **Get Started Quickly** - Follow the quick start guide
-2. **Understand Architecture** - Study the diagrams and flows  
-3. **Implement Features** - Use detailed examples and configuration
-4. **Go to Production** - Follow best practices and monitoring guides
-5. **Troubleshoot Issues** - Comprehensive error handling coverage
+1. **Bắt Đầu Nhanh** - Theo dõi hướng dẫn nhanh
+2. **Hiểu Kiến Trúc** - Nghiên cứu sơ đồ và luồng  
+3. **Triển Khai Tính Năng** - Sử dụng ví dụ và cấu hình chi tiết
+4. **Lên Production** - Theo dõi best practices và hướng dẫn monitoring
+5. **Troubleshoot Issues** - Bao phủ xử lý lỗi toàn diện
 
-The documentation is structured to support both newcomers learning the basics and experienced developers implementing advanced enterprise features.
+Tài liệu được cấu trúc để hỗ trợ cả người mới bắt đầu học cơ bản và developers có kinh nghiệm triển khai tính năng enterprise nâng cao.

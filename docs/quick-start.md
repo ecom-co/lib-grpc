@@ -1,20 +1,20 @@
-# Quick Start Guide
+# Hướng Dẫn Nhanh
 
-Get up and running with `@ecom-co/grpc` in just a few minutes! This guide will walk you through the essential setup steps.
+Khởi động với `@ecom-co/grpc` chỉ trong vài phút! Hướng dẫn này sẽ dẫn bạn qua các bước setup cần thiết.
 
-## Installation
+## Cài Đặt
 
 ```bash
 npm install @ecom-co/grpc
 ```
 
-:::info Prerequisites
+:::info Điều Kiện Tiên Quyết
 - NestJS >= 10.0.0
 - Node.js >= 16.0.0
 - TypeScript >= 4.5.0
 :::
 
-## Basic Setup Flow
+## Luồng Setup Cơ Bản
 
 ```mermaid
 flowchart TD
@@ -34,7 +34,7 @@ flowchart TD
     style G fill:#e8eaf6
 ```
 
-## Step 1: Create Your gRPC Module
+## Bước 1: Tạo gRPC Module Của Bạn
 
 ```typescript title="app.module.ts"
 import { Module } from '@nestjs/common';
@@ -47,7 +47,6 @@ import { GrpcModule } from '@ecom-co/grpc';
         {
           name: 'user-service',
           type: 'server',
-          package: 'user',
           port: 50052,
           protoPath: 'src/proto/user.proto',
         },
@@ -58,10 +57,10 @@ import { GrpcModule } from '@ecom-co/grpc';
 export class AppModule {}
 ```
 
-## Step 2: Add Global Middleware
+## Bước 2: Thêm Global Middleware
 
 :::tip Global Middleware
-Global middleware automatically applies to all gRPC methods, eliminating the need for individual decorators on each controller method.
+Global middleware tự động áp dụng cho tất cả gRPC methods, loại bỏ nhu cầu decorators riêng lẻ trên mỗi controller method.
 :::
 
 ```typescript title="app.module.ts"
@@ -86,19 +85,19 @@ import {
         },
       ],
       globalMiddleware: {
-        // Validation for all requests
+        // Validation cho tất cả requests
         pipes: [new GrpcValidationPipe({
           enableErrorLogging: true,
           stripUnknownProperties: true,
         })],
         
-        // Exception handling for all errors
+        // Exception handling cho tất cả errors
         filters: [new GrpcExceptionFilter({
           enableLogging: true,
           exposeInternalErrors: process.env.NODE_ENV !== 'production',
         })],
         
-        // Logging for all requests/responses
+        // Logging cho tất cả requests/responses
         interceptors: [new GrpcLoggingInterceptor({
           logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info',
           logRequest: true,
@@ -111,7 +110,7 @@ import {
 export class AppModule {}
 ```
 
-## Step 3: Create Your Controller
+## Bước 3: Tạo Controller Của Bạn
 
 ```typescript title="user.controller.ts"
 import { Controller } from '@nestjs/common';
@@ -131,7 +130,7 @@ interface User {
 export class UserController {
   @GrpcMethod('UserService', 'GetUser')
   async getUser(data: GetUserRequest): Promise<User> {
-    // Your business logic here
+    // Business logic của bạn ở đây
     return {
       id: data.id,
       name: 'John Doe',
@@ -141,13 +140,13 @@ export class UserController {
 
   @GrpcMethod('UserService', 'CreateUser')
   async createUser(data: CreateUserRequest): Promise<User> {
-    // Create user logic
+    // Logic tạo user
     return newUser;
   }
 }
 ```
 
-## Step 4: Setup Main Application
+## Bước 4: Setup Main Application
 
 ```typescript title="main.ts"
 import { NestFactory } from '@nestjs/core';

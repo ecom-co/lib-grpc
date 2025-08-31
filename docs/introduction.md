@@ -1,12 +1,12 @@
-# Introduction
+# Giới Thiệu
 
-:::info About @ecom-co/grpc
-A comprehensive gRPC utilities library for NestJS applications with enterprise-grade features including client wrapping, exception handling, validation, logging, circuit breaker, and distributed tracing.
+:::info Về @ecom-co/grpc
+Thư viện gRPC utilities toàn diện cho ứng dụng NestJS với các tính năng cấp enterprise bao gồm client wrapping, exception handling, validation, logging, circuit breaker và distributed tracing.
 :::
 
-## Overview
+## Tổng Quan
 
-The `@ecom-co/grpc` library provides a complete suite of utilities to enhance gRPC development in NestJS applications. It focuses on reliability, observability, and developer experience through well-designed components that handle common challenges in microservices architectures.
+Thư viện `@ecom-co/grpc` cung cấp bộ utilities hoàn chỉnh để nâng cao phát triển gRPC trong ứng dụng NestJS. Nó tập trung vào độ tin cậy, khả năng quan sát và trải nghiệm developer thông qua các component được thiết kế tốt để xử lý những thách thức phổ biến trong kiến trúc microservices.
 
 ```mermaid
 graph TB
@@ -44,43 +44,43 @@ graph TB
     style P fill:#ffebee
 ```
 
-## Key Features
+## Tính Năng Chính
 
 ### 🎯 Enhanced Decorators
-- **@GrpcMethod()**: Enhanced gRPC method decorator with metadata support
-- **@EnhancedOperation()**: Performance monitoring and caching capabilities
-- **@TraceOperation()**: Distributed tracing integration
-- **@Cacheable()**: Method-level caching with TTL
-- **@MonitorPerformance()**: Automatic performance monitoring
+- **@GrpcMethod()**: Decorator method gRPC nâng cao với hỗ trợ metadata
+- **@EnhancedOperation()**: Khả năng monitoring hiệu suất và caching
+- **@TraceOperation()**: Tích hợp distributed tracing
+- **@Cacheable()**: Caching cấp method với TTL
+- **@MonitorPerformance()**: Monitoring hiệu suất tự động
 
-### 🛡️ Exception Handling
-- **GrpcExceptionFilter**: Server-side exception handling and transformation
-- **GrpcClientExceptionFilter**: Client-side error handling for HTTP endpoints
-- **Custom Exception Classes**: Structured error handling with gRPC status codes
+### 🛡️ Xử Lý Exception
+- **GrpcExceptionFilter**: Xử lý và chuyển đổi exception phía server
+- **GrpcClientExceptionFilter**: Xử lý lỗi phía client cho HTTP endpoints
+- **Custom Exception Classes**: Xử lý lỗi có cấu trúc với gRPC status codes
 
 ### ✅ Validation & Transformation
-- **GrpcValidationPipe**: Request validation with class-validator integration
-- **Custom Data Serializers**: Flexible data transformation
-- **Error Message Customization**: Detailed validation error reporting
+- **GrpcValidationPipe**: Validation request với tích hợp class-validator
+- **Custom Data Serializers**: Chuyển đổi dữ liệu linh hoạt
+- **Error Message Customization**: Báo cáo lỗi validation chi tiết
 
 ### 📝 Logging & Observability
-- **GrpcLoggingInterceptor**: Comprehensive request/response logging
-- **Correlation IDs**: Request tracking across services
-- **Performance Metrics**: Response time and throughput monitoring
+- **GrpcLoggingInterceptor**: Logging request/response toàn diện
+- **Correlation IDs**: Theo dõi request qua các services
+- **Performance Metrics**: Monitoring thời gian phản hồi và throughput
 
 ### 🔧 Client Enhancements
-- **WrappedGrpc**: Enhanced client with retry, timeout, and logging
-- **Automatic Retries**: Configurable retry logic for resilience
-- **Timeout Management**: Request timeout handling
-- **Error Recovery**: Graceful error handling and recovery
+- **WrappedGrpc**: Client nâng cao với retry, timeout và logging
+- **Automatic Retries**: Logic retry có thể cấu hình cho resilience
+- **Timeout Management**: Xử lý timeout request
+- **Error Recovery**: Xử lý và phục hồi lỗi graceful
 
-### ⚡ Advanced Features
-- **Circuit Breaker**: Fault tolerance and service protection
-- **Distributed Tracing**: End-to-end request tracing
-- **Health Checks**: Service health monitoring
-- **Load Balancing**: Client-side load balancing support
+### ⚡ Tính Năng Nâng Cao
+- **Circuit Breaker**: Fault tolerance và bảo vệ service
+- **Distributed Tracing**: Tracing request end-to-end
+- **Health Checks**: Monitoring sức khỏe service
+- **Load Balancing**: Hỗ trợ load balancing phía client
 
-## Architecture Overview
+## Tổng Quan Kiến Trúc
 
 ```mermaid
 graph LR
@@ -97,7 +97,6 @@ graph LR
     
     subgraph "Middleware Stack"
         H[Guards] --> I[Interceptors]
-        I --> J[Pipes]
         J --> K[Filters]
     end
     
@@ -123,36 +122,36 @@ graph LR
     style N fill:#f3e5f5
 ```
 
-## Component Overview
+## Tổng Quan Component
 
-| Component | Purpose | Key Features |
+| Component | Mục đích | Tính năng chính |
 |-----------|---------|--------------|
-| **WrappedGrpc** | Enhanced gRPC client | Retry, timeout, logging, error handling |
-| **GrpcExceptionFilter** | Server exception handling | Error transformation, logging, metrics |
-| **GrpcClientExceptionFilter** | Client error mapping | gRPC to HTTP error conversion |
-| **GrpcValidationPipe** | Request validation | class-validator integration, custom serializers |
-| **GrpcLoggingInterceptor** | Request/response logging | Performance metrics, correlation IDs |
-| **CircuitBreakerService** | Fault tolerance | Service protection, automatic recovery |
-| **DistributedTracerService** | Request tracing | End-to-end visibility, performance analysis |
+| **WrappedGrpc** | Client gRPC nâng cao | Retry, timeout, logging, xử lý lỗi |
+| **GrpcExceptionFilter** | Xử lý exception server | Chuyển đổi lỗi, logging, metrics |
+| **GrpcClientExceptionFilter** | Mapping lỗi client | Chuyển đổi lỗi gRPC sang HTTP |
+| **GrpcValidationPipe** | Validation request | Tích hợp class-validator, custom serializers |
+| **GrpcLoggingInterceptor** | Logging request/response | Performance metrics, correlation IDs |
+| **CircuitBreakerService** | Fault tolerance | Bảo vệ service, phục hồi tự động |
+| **DistributedTracerService** | Tracing request | Khả năng hiển thị end-to-end, phân tích hiệu suất |
 
-:::tip Getting Started
-Ready to enhance your gRPC services? Start with our [Quick Start Guide](./quick-start.md) to get up and running in minutes.
+:::tip Bắt Đầu
+Sẵn sàng nâng cao gRPC services của bạn? Bắt đầu với [Hướng Dẫn Nhanh](./quick-start.md) để khởi động trong vài phút.
 :::
 
-:::warning Production Considerations
-When deploying to production, ensure you:
-- Configure appropriate timeouts and retry policies
-- Enable proper logging levels
-- Set up health checks and monitoring
-- Configure circuit breaker thresholds
-- Review security settings for error exposure
+:::warning Cân Nhắc Production
+Khi deploy lên production, đảm bảo bạn:
+- Cấu hình timeout và retry policies phù hợp
+- Kích hoạt logging levels đúng cách
+- Thiết lập health checks và monitoring
+- Cấu hình ngưỡng circuit breaker
+- Xem xét cài đặt bảo mật cho error exposure
 :::
 
-## What's Next?
+## Tiếp Theo Là Gì?
 
-- **[Quick Start](./quick-start.md)**: Get started with basic setup
-- **[Usage Examples](./usage-examples.md)**: Learn through practical examples  
-- **[Client Module](./client-module.md)**: Deep dive into client features
-- **[Exception Handling](./exception-handling.md)**: Master error handling
-- **[Advanced Features](./advanced-features.md)**: Explore enterprise features
-- **[API Reference](./api-reference.md)**: Complete API documentation
+- **[Hướng Dẫn Nhanh](./quick-start.md)**: Bắt đầu với setup cơ bản
+- **[Ví Dụ Sử Dụng](./usage-examples.md)**: Học qua ví dụ thực tế  
+- **[Client Module](./client-module.md)**: Tìm hiểu sâu về tính năng client
+- **[Xử Lý Exception](./exception-handling.md)**: Làm chủ xử lý lỗi
+- **[Tính Năng Nâng Cao](./advanced-features.md)**: Khám phá tính năng enterprise
+- **[Tài Liệu API](./api-reference.md)**: Tài liệu API hoàn chỉnh
