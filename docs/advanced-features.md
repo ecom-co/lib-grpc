@@ -1,12 +1,12 @@
-# Advanced Features
+# Tính Năng Nâng Cao
 
-The `@ecom-co/grpc` library includes enterprise-grade advanced features for building resilient, observable, and high-performance gRPC applications.
+Thư viện `@ecom-co/grpc` bao gồm các tính năng nâng cao cấp enterprise để xây dựng ứng dụng gRPC resilient, observable và hiệu suất cao.
 
-:::info Enterprise Features
-Advanced features include circuit breaker pattern for fault tolerance, distributed tracing for observability, performance monitoring, caching capabilities, and health check systems.
+:::info Tính Năng Enterprise
+Các tính năng nâng cao bao gồm circuit breaker pattern cho fault tolerance, distributed tracing cho observability, performance monitoring, khả năng caching và hệ thống health check.
 :::
 
-## Overview
+## Tổng Quan
 
 ```mermaid
 graph TB

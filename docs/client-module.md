@@ -1,21 +1,21 @@
 # gRPC Client Module
 
-The gRPC Client Module provides enhanced client functionality with built-in retry logic, timeout handling, error recovery, and comprehensive logging capabilities.
+gRPC Client Module cung cấp chức năng client nâng cao với logic retry tích hợp, xử lý timeout, phục hồi lỗi và khả năng logging toàn diện.
 
-:::info Enhanced Client Features
-The `WrappedGrpc` client wrapper adds enterprise-grade features like automatic retries, circuit breaker patterns, detailed logging, and graceful error handling to your gRPC client connections.
+:::info Tính Năng Client Nâng Cao
+`WrappedGrpc` client wrapper thêm các tính năng cấp enterprise như automatic retries, circuit breaker patterns, logging chi tiết và xử lý lỗi graceful cho các kết nối gRPC client của bạn.
 :::
 
-## Core Features
+## Tính Năng Cốt Lõi
 
-- **🔄 Automatic Retries**: Configurable retry logic with exponential backoff
-- **⏱️ Timeout Management**: Request timeout handling and configuration
-- **📝 Comprehensive Logging**: Detailed request/response logging with sensitive data redaction
-- **🛡️ Error Recovery**: Graceful handling of network and service errors
-- **🎯 Selective Retries**: Only retry specific gRPC status codes
-- **🔐 Security**: Automatic sanitization of sensitive data in logs
+- **🔄 Automatic Retries**: Logic retry có thể cấu hình với exponential backoff
+- **⏱️ Quản Lý Timeout**: Xử lý và cấu hình timeout request
+- **📝 Logging Toàn Diện**: Logging request/response chi tiết với redaction sensitive data
+- **🛡️ Phục Hồi Lỗi**: Xử lý graceful các lỗi network và service
+- **🎯 Selective Retries**: Chỉ retry các gRPC status codes cụ thể
+- **🔐 Bảo Mật**: Tự động sanitization sensitive data trong logs
 
-## Client Architecture
+## Kiến Trúc Client
 
 ```mermaid
 graph TB

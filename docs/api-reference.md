@@ -1,16 +1,16 @@
-# API Reference
+# Tài Liệu API
 
-Complete API reference for all components, utilities, and configuration options in the `@ecom-co/grpc` library.
+Tài liệu API hoàn chỉnh cho tất cả components, utilities và tùy chọn cấu hình trong thư viện `@ecom-co/grpc`.
 
-:::info API Documentation
-This comprehensive reference covers all classes, interfaces, decorators, and configuration options available in the library with detailed parameter descriptions and usage examples.
+:::info Tài Liệu API
+Tài liệu tham chiếu toàn diện này bao gồm tất cả classes, interfaces, decorators và tùy chọn cấu hình có sẵn trong thư viện với mô tả parameters chi tiết và ví dụ sử dụng.
 :::
 
 ## Core Components
 
 ### GrpcModule
 
-The main module for configuring gRPC services and global middleware.
+Module chính để cấu hình gRPC services và global middleware.
 
 #### Configuration Interface
 

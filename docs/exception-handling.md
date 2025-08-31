@@ -1,12 +1,12 @@
-# Exception Handling
+# Xử Lý Exception
 
-The `@ecom-co/grpc` library provides comprehensive exception handling with structured gRPC exceptions, automatic error transformation, and seamless HTTP integration.
+Thư viện `@ecom-co/grpc` cung cấp xử lý exception toàn diện với các gRPC exceptions có cấu trúc, chuyển đổi lỗi tự động và tích hợp HTTP liền mạch.
 
-:::info Exception System Overview
-The library includes a complete set of gRPC-compliant exception classes, automatic error transformation between gRPC and HTTP contexts, and advanced filtering capabilities for robust error management.
+:::info Tổng Quan Hệ Thống Exception
+Thư viện bao gồm bộ exception classes tuân thủ gRPC hoàn chỉnh, chuyển đổi lỗi tự động giữa gRPC và HTTP contexts, và khả năng filtering nâng cao cho quản lý lỗi mạnh mẽ.
 :::
 
-## Exception Architecture
+## Kiến Trúc Exception
 
 ```mermaid
 graph TB
