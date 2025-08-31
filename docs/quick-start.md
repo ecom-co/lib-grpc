@@ -174,9 +174,9 @@ async function bootstrap() {
 bootstrap();
 ```
 
-## Step 5: Add gRPC Client (Optional)
+## Bước 5: Thêm gRPC Client (Tùy Chọn)
 
-For HTTP services that need to call gRPC services:
+Cho HTTP services cần gọi gRPC services:
 
 ```typescript title="user.service.ts"
 import { Injectable } from '@nestjs/common';
@@ -188,12 +188,12 @@ export class UserService {
   private userService: any;
 
   constructor(private client: ClientGrpc) {
-    // Wrap the client with enhanced features
+    // Wrap client với tính năng nâng cao
     const options: GrpcOptions = {
       enableLogging: true,
       retry: 3,
       timeout: 10000,
-      retryableCodes: [1, 4, 8, 10, 13, 14, 15], // Common retryable gRPC codes
+      retryableCodes: [1, 4, 8, 10, 13, 14, 15], // gRPC codes có thể retry phổ biến
     };
 
     const wrappedClient = createWrappedGrpc(this.client, options);
@@ -206,9 +206,9 @@ export class UserService {
 }
 ```
 
-## Step 6: Add HTTP Exception Filter
+## Bước 6: Thêm HTTP Exception Filter
 
-For HTTP controllers that use gRPC clients:
+Cho HTTP controllers sử dụng gRPC clients:
 
 ```typescript title="app.controller.ts"
 import { Controller, Get, Param, UseFilters } from '@nestjs/common';
@@ -230,28 +230,28 @@ export class AppController {
 }
 ```
 
-## Testing Your Setup
+## Testing Setup Của Bạn
 
-### 1. Start the gRPC Server
+### 1. Khởi Động gRPC Server
 
 ```bash
 npm run start
 ```
 
-### 2. Test with grpcurl
+### 2. Test với grpcurl
 
 ```bash
-# Install grpcurl first
+# Cài đặt grpcurl trước
 go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
 
-# Test your service
+# Test service của bạn
 grpcurl -plaintext \
   -d '{"id": "123"}' \
   localhost:50052 \
   user.UserService/GetUser
 ```
 
-### 3. Expected Response
+### 3. Response Mong Đợi
 
 ```json
 {
@@ -261,31 +261,31 @@ grpcurl -plaintext \
 }
 ```
 
-## Configuration Quick Reference
+## Tham Chiếu Nhanh Cấu Hình
 
-| Component | Key Options |
+| Component | Tùy Chọn Chính |
 |-----------|-------------|
 | **GrpcValidationPipe** | `enableErrorLogging`, `stripUnknownProperties` |
 | **GrpcExceptionFilter** | `enableLogging`, `exposeInternalErrors` |
 | **GrpcLoggingInterceptor** | `logLevel`, `logRequest`, `logResponse` |
 | **WrappedGrpc** | `retry`, `timeout`, `retryableCodes` |
 
-:::warning Common Issues
-- **Port Conflicts**: Ensure your gRPC port isn't already in use
-- **Proto Path**: Use absolute paths or paths relative to your project root
-- **Package Names**: Ensure package names match between your proto files and module configuration
+:::warning Vấn Đề Thường Gặp
+- **Xung Đột Port**: Đảm bảo gRPC port chưa được sử dụng
+- **Proto Path**: Sử dụng đường dẫn tuyệt đối hoặc tương đối với project root
+- **Package Names**: Đảm bảo package names khớp giữa proto files và module configuration
 :::
 
-:::tip Next Steps
-Now that you have a basic setup running:
-- Explore [Usage Examples](./usage-examples.md) for more complex scenarios
-- Learn about [Exception Handling](./exception-handling.md) for robust error management
-- Check out [Advanced Features](./advanced-features.md) for circuit breakers and tracing
+:::tip Bước Tiếp Theo
+Bây giờ bạn đã có setup cơ bản chạy:
+- Khám phá [Ví Dụ Sử Dụng](./usage-examples.md) cho các tình huống phức tạp hơn
+- Học về [Xử Lý Exception](./exception-handling.md) cho quản lý lỗi mạnh mẽ
+- Xem [Tính Năng Nâng Cao](./advanced-features.md) cho circuit breakers và tracing
 :::
 
 ## Development vs Production
 
-### Development Configuration
+### Cấu Hình Development
 
 ```typescript
 const developmentMiddleware = {
@@ -295,34 +295,34 @@ const developmentMiddleware = {
   })],
   filters: [new GrpcExceptionFilter({
     enableLogging: true,
-    exposeInternalErrors: true, // Show detailed errors
+    exposeInternalErrors: true, // Hiển thị lỗi chi tiết
   })],
   interceptors: [new GrpcLoggingInterceptor({
     logLevel: 'info',
     logRequest: true,
-    logResponse: true, // Log everything in dev
+    logResponse: true, // Log mọi thứ trong dev
   })],
 };
 ```
 
-### Production Configuration
+### Cấu Hình Production
 
 ```typescript
 const productionMiddleware = {
   pipes: [new GrpcValidationPipe({
-    enableErrorLogging: false, // Reduce noise
+    enableErrorLogging: false, // Giảm nhiễu
     stripUnknownProperties: true,
   })],
   filters: [new GrpcExceptionFilter({
     enableLogging: true,
-    exposeInternalErrors: false, // Hide internal details
+    exposeInternalErrors: false, // Ẩn chi tiết nội bộ
   })],
   interceptors: [new GrpcLoggingInterceptor({
     logLevel: 'error',
-    logRequest: false, // Reduce log volume
+    logRequest: false, // Giảm volume log
     logResponse: false,
   })],
 };
 ```
 
-Congratulations! 🎉 You now have a fully functional gRPC service with enhanced error handling, validation, and logging capabilities.
+Chúc mừng! 🎉 Bạn giờ đã có gRPC service đầy đủ chức năng với enhanced error handling, validation và logging capabilities.
