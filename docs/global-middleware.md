@@ -1,19 +1,19 @@
 # Global Middleware
 
-The `@ecom-co/grpc` library provides Global Middleware functionality that allows you to apply middleware (pipes, filters, interceptors, guards) to all methods in gRPC controllers without declaring individual decorators for each method.
+Thư viện `@ecom-co/grpc` cung cấp chức năng Global Middleware cho phép bạn áp dụng middleware (pipes, filters, interceptors, guards) cho tất cả methods trong gRPC controllers mà không cần khai báo decorators riêng lẻ cho từng method.
 
-:::info What is Global Middleware?
-Global Middleware automatically applies common functionality like validation, error handling, logging, and authentication to all gRPC methods in your application, reducing boilerplate code and ensuring consistency.
+:::info Global Middleware là gì?
+Global Middleware tự động áp dụng các chức năng chung như validation, error handling, logging và authentication cho tất cả gRPC methods trong ứng dụng của bạn, giảm thiểu boilerplate code và đảm bảo tính nhất quán.
 :::
 
-## Benefits
+## Lợi Ích
 
-- **🔄 Automatic Application**: Middleware is automatically applied to all gRPC methods
-- **📝 Reduced Boilerplate**: No need to add decorators to every method
-- **🎯 Centralized Management**: Configure middleware in one place
-- **🛠️ Easy Maintenance**: Change configuration once, apply everywhere
+- **🔄 Áp Dụng Tự Động**: Middleware được áp dụng tự động cho tất cả gRPC methods
+- **📝 Giảm Thiểu Boilerplate**: Không cần thêm decorators cho từng method
+- **🎯 Quản Lý Tập Trung**: Cấu hình middleware ở một nơi
+- **🛠️ Bảo Trì Dễ Dàng**: Thay đổi cấu hình một lần, áp dụng mọi nơi
 
-## Middleware Execution Flow
+## Luồng Thực Thi Middleware
 
 ```mermaid
 flowchart TD
@@ -38,11 +38,11 @@ flowchart TD
     style J fill:#ffebee
 ```
 
-## Supported Middleware Types
+## Các Loại Middleware Được Hỗ Trợ
 
 ### 1. Pipes (Validation & Transformation)
 
-Pipes transform input data and validate requests before they reach your controller methods.
+Pipes chuyển đổi dữ liệu đầu vào và validate requests trước khi chúng đến controller methods của bạn.
 
 ```typescript
 import { PipeTransform } from '@nestjs/common';
@@ -50,7 +50,7 @@ import { PipeTransform } from '@nestjs/common';
 pipes?: PipeTransform[];
 ```
 
-#### Example Configuration
+#### Ví Dụ Cấu Hình
 
 ```typescript
 import { ValidationPipe } from '@nestjs/common';
@@ -71,7 +71,7 @@ pipes: [
 
 ### 2. Filters (Exception Handling)
 
-Filters handle exceptions and transform them into appropriate gRPC responses.
+Filters xử lý exceptions và chuyển đổi chúng thành các gRPC responses phù hợp.
 
 ```typescript
 import { ExceptionFilter } from '@nestjs/common';
@@ -79,7 +79,7 @@ import { ExceptionFilter } from '@nestjs/common';
 filters?: ExceptionFilter[];
 ```
 
-#### Example Configuration
+#### Ví Dụ Cấu Hình
 
 ```typescript
 import { GrpcExceptionFilter } from '@ecom-co/grpc';
@@ -95,7 +95,7 @@ filters: [
 
 ### 3. Interceptors (Cross-cutting Concerns)
 
-Interceptors handle cross-cutting concerns like logging, caching, and monitoring.
+Interceptors xử lý các concerns xuyên suốt như logging, caching và monitoring.
 
 ```typescript
 import { NestInterceptor } from '@nestjs/common';
@@ -103,7 +103,7 @@ import { NestInterceptor } from '@nestjs/common';
 interceptors?: NestInterceptor[];
 ```
 
-#### Example Configuration
+#### Ví Dụ Cấu Hình
 
 ```typescript
 import { GrpcLoggingInterceptor } from '@ecom-co/grpc';
@@ -120,7 +120,7 @@ interceptors: [
 
 ### 4. Guards (Access Control)
 
-Guards handle authentication and authorization before method execution.
+Guards xử lý authentication và authorization trước khi thực thi method.
 
 ```typescript
 import { CanActivate } from '@nestjs/common';
@@ -128,7 +128,7 @@ import { CanActivate } from '@nestjs/common';
 guards?: CanActivate[];
 ```
 
-#### Example Configuration
+#### Ví Dụ Cấu Hình
 
 ```typescript
 import { AuthGuard } from './guards/auth.guard';
@@ -140,9 +140,9 @@ guards: [
 ]
 ```
 
-## Complete Setup Example
+## Ví Dụ Setup Hoàn Chỉnh
 
-### Module Configuration
+### Cấu Hình Module
 
 ```typescript title="app.module.ts"
 import { Module } from '@nestjs/common';
@@ -166,13 +166,13 @@ import {
         },
       ],
       globalMiddleware: {
-        // Authentication and authorization
+        // Authentication và authorization
         guards: [
           new AuthGuard(),
           new RoleGuard(),
         ],
         
-        // Request/response processing
+        // Xử lý request/response
         interceptors: [
           new GrpcLoggingInterceptor({
             logLevel: 'info',
@@ -182,7 +182,7 @@ import {
           new MetricsInterceptor(),
         ],
         
-        // Input validation and transformation
+        // Validation và transformation đầu vào
         pipes: [
           new GrpcValidationPipe({
             enableErrorLogging: true,
@@ -194,7 +194,7 @@ import {
           }),
         ],
         
-        // Exception handling
+        // Xử lý exception
         filters: [
           new GrpcExceptionFilter({
             enableLogging: true,
@@ -212,9 +212,9 @@ import {
 export class AppModule {}
 ```
 
-### Clean Controller Implementation
+### Triển Khai Controller Gọn Gàng
 
-With Global Middleware, your controllers become much cleaner:
+Với Global Middleware, controllers của bạn trở nên gọn gàng hơn nhiều:
 
 ```typescript title="user.controller.ts"
 import { Controller } from '@nestjs/common';
@@ -226,7 +226,7 @@ export class UserController {
 
   @GrpcMethod('UserService', 'GetUser')
   async getUser(data: GetUserRequest): Promise<UserResponse> {
-    // All middleware is automatically applied:
+    // Tất cả middleware được áp dụng tự động:
     // ✅ Authentication (AuthGuard)
     // ✅ Authorization (RoleGuard) 
     // ✅ Logging (GrpcLoggingInterceptor)
@@ -239,16 +239,16 @@ export class UserController {
 
   @GrpcMethod('UserService', 'CreateUser')
   async createUser(data: CreateUserRequest): Promise<UserResponse> {
-    // All middleware is also applied to this method automatically
+    // Tất cả middleware cũng được áp dụng tự động cho method này
     return this.userService.create(data);
   }
 }
 ```
 
-## Middleware Execution Order
+## Thứ Tự Thực Thi Middleware
 
-:::note Execution Sequence
-Middleware executes in a specific order to ensure proper request/response processing:
+:::note Trình Tự Thực Thi
+Middleware thực thi theo thứ tự cụ thể để đảm bảo xử lý request/response đúng cách:
 :::
 
 ```mermaid
@@ -267,33 +267,33 @@ sequenceDiagram
     Controller->>Interceptors: 5. Post-processing
     Interceptors->>Client: 6. Response
     
-    Note over Controller,Filters: Exception Handling
-    Controller--xFilters: Exception occurs
+    Note over Controller,Filters: Xử Lý Exception
+    Controller--xFilters: Exception xảy ra
     Filters-->>Client: Error Response
 ```
 
-1. **Guards** → Access control and authentication
-2. **Interceptors (Before)** → Pre-processing and setup
-3. **Pipes** → Validation and data transformation  
-4. **Controller Method** → Business logic execution
-5. **Interceptors (After)** → Post-processing and cleanup
-6. **Filters** → Exception handling (if errors occur)
+1. **Guards** → Kiểm soát truy cập và authentication
+2. **Interceptors (Before)** → Pre-processing và setup
+3. **Pipes** → Validation và data transformation  
+4. **Controller Method** → Thực thi business logic
+5. **Interceptors (After)** → Post-processing và cleanup
+6. **Filters** → Xử lý exception (nếu có lỗi xảy ra)
 
-## Environment-Specific Configuration
+## Cấu Hình Theo Môi Trường
 
-### Development Environment
+### Môi Trường Development
 
 ```typescript title="development.config.ts"
 const developmentMiddleware = {
   guards: [
-    new AuthGuard({ strict: false }), // Relaxed auth for testing
+    new AuthGuard({ strict: false }), // Auth lỏng lẻo cho testing
   ],
   
   interceptors: [
     new GrpcLoggingInterceptor({
       logLevel: 'debug',
       logRequest: true,
-      logResponse: true, // Full logging for debugging
+      logResponse: true, // Logging đầy đủ cho debugging
       isDevelopment: true,
     }),
   ],
@@ -301,9 +301,9 @@ const developmentMiddleware = {
   pipes: [
     new GrpcValidationPipe({
       enableErrorLogging: true,
-      stripUnknownProperties: false, // Keep for debugging
+      stripUnknownProperties: false, // Giữ lại cho debugging
       validationOptions: {
-        forbidNonWhitelisted: false, // Allow extra fields
+        forbidNonWhitelisted: false, // Cho phép extra fields
       },
     }),
   ],
@@ -311,19 +311,19 @@ const developmentMiddleware = {
   filters: [
     new GrpcExceptionFilter({
       enableLogging: true,
-      exposeInternalErrors: true, // Show detailed errors
+      exposeInternalErrors: true, // Hiển thị lỗi chi tiết
       isDevelopment: true,
     }),
   ],
 };
 ```
 
-### Production Environment
+### Môi Trường Production
 
 ```typescript title="production.config.ts"
 const productionMiddleware = {
   guards: [
-    new AuthGuard({ strict: true }), // Strict authentication
+    new AuthGuard({ strict: true }), // Authentication nghiêm ngặt
     new RateLimitGuard({ limit: 100 }), // Rate limiting
   ],
   
@@ -331,7 +331,7 @@ const productionMiddleware = {
     new GrpcLoggingInterceptor({
       logLevel: 'error',
       logRequest: false,
-      logResponse: false, // Minimal logging
+      logResponse: false, // Logging tối thiểu
       isDevelopment: false,
     }),
     new MetricsInterceptor(), // Performance monitoring
@@ -340,9 +340,9 @@ const productionMiddleware = {
   pipes: [
     new GrpcValidationPipe({
       enableErrorLogging: false,
-      stripUnknownProperties: true, // Security
+      stripUnknownProperties: true, // Bảo mật
       validationOptions: {
-        forbidNonWhitelisted: true, // Strict validation
+        forbidNonWhitelisted: true, // Validation nghiêm ngặt
       },
     }),
   ],
@@ -350,16 +350,16 @@ const productionMiddleware = {
   filters: [
     new GrpcExceptionFilter({
       enableLogging: true,
-      exposeInternalErrors: false, // Hide internal details
+      exposeInternalErrors: false, // Ẩn chi tiết internal
       isDevelopment: false,
     }),
   ],
 };
 ```
 
-## Advanced Usage Patterns
+## Patterns Sử Dụng Nâng Cao
 
-### Custom Middleware Integration
+### Tích Hợp Custom Middleware
 
 ```typescript title="custom-middleware.ts"
 // Custom Rate Limiting Guard
@@ -372,8 +372,8 @@ export class RateLimitGuard implements CanActivate {
     const clientId = this.getClientId(request);
     
     const now = Date.now();
-    const windowMs = 60000; // 1 minute
-    const limit = 100; // 100 requests per minute
+    const windowMs = 60000; // 1 phút
+    const limit = 100; // 100 requests mỗi phút
     
     const clientRequests = this.requests.get(clientId) || [];
     const recentRequests = clientRequests.filter(time => now - time < windowMs);
@@ -389,7 +389,7 @@ export class RateLimitGuard implements CanActivate {
   }
   
   private getClientId(request: any): string {
-    // Extract client identifier from metadata
+    // Trích xuất client identifier từ metadata
     return request.metadata?.get('client-id')?.[0] || 'anonymous';
   }
 }
@@ -421,68 +421,68 @@ export class MetricsInterceptor implements NestInterceptor {
   }
   
   private recordMetric(name: string, value: number, labels: Record<string, string>) {
-    // Send metrics to your monitoring system (Prometheus, DataDog, etc.)
+    // Gửi metrics đến hệ thống monitoring của bạn (Prometheus, DataDog, v.v.)
     console.log(`Metric: ${name}=${value}`, labels);
   }
 }
 ```
 
-## Configuration Options Reference
+## Tham Chiếu Tùy Chọn Cấu Hình
 
-### GrpcValidationPipe Options
+### Tùy Chọn GrpcValidationPipe
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enableErrorLogging` | `boolean` | `true` | Enable detailed error logging |
-| `stripUnknownProperties` | `boolean` | `false` | Remove unknown properties from input |
-| `errorMessagePrefix` | `string` | `''` | Prefix for error messages |
-| `validationOptions` | `ValidationOptions` | `{}` | class-validator options |
-| `transformOptions` | `ClassTransformOptions` | `{}` | class-transformer options |
-| `validationGroups` | `string[]` | `[]` | Validation groups to apply |
+| Tùy Chọn | Type | Default | Mô Tả |
+|----------|------|---------|-------|
+| `enableErrorLogging` | `boolean` | `true` | Bật logging lỗi chi tiết |
+| `stripUnknownProperties` | `boolean` | `false` | Loại bỏ properties không xác định từ input |
+| `errorMessagePrefix` | `string` | `''` | Prefix cho error messages |
+| `validationOptions` | `ValidationOptions` | `{}` | Tùy chọn class-validator |
+| `transformOptions` | `ClassTransformOptions` | `{}` | Tùy chọn class-transformer |
+| `validationGroups` | `string[]` | `[]` | Validation groups để áp dụng |
 
-### GrpcExceptionFilter Options
+### Tùy Chọn GrpcExceptionFilter
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enableLogging` | `boolean` | `true` | Enable exception logging |
-| `exposeInternalErrors` | `boolean` | `!production` | Show internal error details |
-| `defaultErrorMessage` | `string` | `'Unknown error'` | Default error message |
+| Tùy Chọn | Type | Default | Mô Tả |
+|----------|------|---------|-------|
+| `enableLogging` | `boolean` | `true` | Bật exception logging |
+| `exposeInternalErrors` | `boolean` | `!production` | Hiển thị chi tiết lỗi internal |
+| `defaultErrorMessage` | `string` | `'Unknown error'` | Error message mặc định |
 | `customErrorMappings` | `Record<string, Constructor>` | `{}` | Custom error type mappings |
 
-### GrpcLoggingInterceptor Options
+### Tùy Chọn GrpcLoggingInterceptor
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `logLevel` | `'debug'\|'info'\|'warn'\|'error'` | `'info'` | Logging level |
-| `logRequest` | `boolean` | `true` | Log incoming requests |
-| `logResponse` | `boolean` | `false` | Log outgoing responses |
-| `isDevelopment` | `boolean` | `false` | Development mode flag |
+| Tùy Chọn | Type | Default | Mô Tả |
+|----------|------|---------|-------|
+| `logLevel` | `'debug'\|'info'\|'warn'\|'error'` | `'info'` | Mức độ logging |
+| `logRequest` | `boolean` | `true` | Log requests đến |
+| `logResponse` | `boolean` | `false` | Log responses đi |
+| `isDevelopment` | `boolean` | `false` | Flag chế độ development |
 
 :::tip Best Practices
-- **Order Matters**: Place guards before interceptors, pipes before controllers
-- **Performance**: Avoid heavy operations in frequently called middleware
-- **Security**: Never expose internal errors in production
-- **Monitoring**: Always include metrics collection in production
-- **Environment**: Use different configurations for dev/staging/production
+- **Thứ Tự Quan Trọng**: Đặt guards trước interceptors, pipes trước controllers
+- **Hiệu Suất**: Tránh các operation nặng trong middleware được gọi thường xuyên
+- **Bảo Mật**: Không bao giờ expose internal errors trong production
+- **Monitoring**: Luôn bao gồm metrics collection trong production
+- **Môi Trường**: Sử dụng cấu hình khác nhau cho dev/staging/production
 :::
 
-:::warning Common Pitfalls
-- **Memory Leaks**: Clean up resources in interceptors and guards
-- **Circular Dependencies**: Avoid injecting services that depend on the middleware
-- **Error Handling**: Always have at least one exception filter
-- **Rate Limiting**: Don't forget to implement rate limiting for public services
+:::warning Lỗi Thường Gặp
+- **Memory Leaks**: Dọn dẹp resources trong interceptors và guards
+- **Circular Dependencies**: Tránh inject services phụ thuộc vào middleware
+- **Error Handling**: Luôn có ít nhất một exception filter
+- **Rate Limiting**: Đừng quên implement rate limiting cho public services
 :::
 
-## Troubleshooting
+## Xử Lý Sự Cố
 
-### Middleware Not Working
+### Middleware Không Hoạt Động
 
-1. **Check module imports**: Ensure `GrpcModule` is properly imported
-2. **Verify configuration**: Check that middleware is correctly configured in `globalMiddleware`
-3. **Check dependencies**: Ensure all required services are available in the module
+1. **Kiểm tra module imports**: Đảm bảo `GrpcModule` được import đúng cách
+2. **Xác minh cấu hình**: Kiểm tra middleware được cấu hình đúng trong `globalMiddleware`
+3. **Kiểm tra dependencies**: Đảm bảo tất cả services cần thiết có sẵn trong module
 
 ```typescript
-// Debug logging to verify middleware loading
+// Debug logging để xác minh middleware loading
 console.log('Global middleware configured:', {
   guards: globalMiddleware.guards?.length || 0,
   interceptors: globalMiddleware.interceptors?.length || 0,
@@ -491,20 +491,20 @@ console.log('Global middleware configured:', {
 });
 ```
 
-### Performance Issues
+### Vấn Đề Hiệu Suất
 
-1. **Profile middleware**: Use performance monitoring to identify bottlenecks
-2. **Optimize order**: Place lightweight middleware first
-3. **Cache results**: Cache expensive operations in guards and interceptors
+1. **Profile middleware**: Sử dụng performance monitoring để xác định bottlenecks
+2. **Tối ưu thứ tự**: Đặt middleware nhẹ trước
+3. **Cache kết quả**: Cache các operations tốn kém trong guards và interceptors
 
-### Conflicts with Local Decorators
+### Xung Đột với Local Decorators
 
-- Global middleware has lower priority than method-level decorators
-- You can selectively disable global middleware for specific methods if needed
-- Use `@UseGuards(null)` or similar to override global settings
+- Global middleware có độ ưu tiên thấp hơn method-level decorators
+- Bạn có thể tắt global middleware cho specific methods nếu cần
+- Sử dụng `@UseGuards(null)` hoặc tương tự để override global settings
 
-:::note Next Steps
-- Learn about [Client Module](./client-module.md) for enhanced gRPC client functionality
-- Explore [Exception Handling](./exception-handling.md) for advanced error management
-- Check out [Advanced Features](./advanced-features.md) for circuit breakers and tracing
+:::note Bước Tiếp Theo
+- Tìm hiểu về [Client Module](./client-module.md) cho chức năng gRPC client nâng cao
+- Khám phá [Exception Handling](./exception-handling.md) cho quản lý lỗi nâng cao
+- Xem [Advanced Features](./advanced-features.md) cho circuit breakers và tracing
 :::
