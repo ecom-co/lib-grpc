@@ -295,3 +295,80 @@ export const createGrpcExceptionFromHttp = (httpStatus: number, message: string)
 // Type guard utility
 export const isGrpcException = (error: unknown): error is BaseGrpcException =>
     error instanceof BaseGrpcException || error instanceof RpcException;
+
+// Unified payload contract for transporting gRPC error data between layers
+export interface GrpcErrorPayload {
+    code: GrpcStatusCodes;
+    details?: unknown;
+    message: string;
+    metadata?: unknown;
+}
+
+export const isGrpcErrorPayload = (e: unknown): e is GrpcErrorPayload =>
+    !!e &&
+    typeof (e as { code?: unknown }).code === 'number' &&
+    typeof (e as { message?: unknown }).message === 'string';
+
+/**
+ * Convert an unknown error/payload into a BaseGrpcException matching the provided gRPC status code.
+ * - Preserves message/details/metadata when available.
+ * - Falls back to INTERNAL on unknown inputs.
+ */
+export const toBaseGrpcException = (e: unknown): BaseGrpcException => {
+    // If it's already a BaseGrpcException, return as-is
+    if (e instanceof BaseGrpcException) {
+        return e;
+    }
+
+    // RpcException that may wrap a payload
+    if (e instanceof RpcException) {
+        const inner = e.getError();
+
+        if (isGrpcErrorPayload(inner)) {
+            return mapPayloadToBaseException(inner);
+        }
+
+        // Best-effort mapping from generic RpcException
+        return new GrpcInternalException(typeof inner === 'string' ? inner : 'Internal server error');
+    }
+
+    // Raw payload from transport
+    if (isGrpcErrorPayload(e)) {
+        return mapPayloadToBaseException(e);
+    }
+
+    // Generic Error
+    if (e instanceof Error) {
+        return new GrpcInternalException(e.message, e);
+    }
+
+    return new GrpcInternalException('Internal server error');
+};
+
+/**
+ * Helper: map GrpcErrorPayload to a specific BaseGrpcException subclass.
+ */
+type GrpcExceptionFactory = (p: GrpcErrorPayload) => BaseGrpcException;
+
+const FACTORY_BY_CODE: Partial<Record<GrpcStatusCodes, GrpcExceptionFactory>> = {
+    [GrpcStatusCodes.ABORTED]: (p) => new GrpcAbortedException(p.message),
+    [GrpcStatusCodes.ALREADY_EXISTS]: (p) => new GrpcConflictException(p.message),
+    [GrpcStatusCodes.CANCELLED]: (p) => new GrpcCancelledException(p.message),
+    [GrpcStatusCodes.DATA_LOSS]: (p) => new GrpcDataLossException(p.message),
+    [GrpcStatusCodes.DEADLINE_EXCEEDED]: (p) => new GrpcTimeoutException(p.message),
+    [GrpcStatusCodes.FAILED_PRECONDITION]: (p) => new GrpcFailedPreconditionException(p.message),
+    [GrpcStatusCodes.INTERNAL]: (p) => new GrpcInternalException(p.message),
+    [GrpcStatusCodes.INVALID_ARGUMENT]: (p) =>
+        new GrpcBadRequestException(p.message, (p.details as Record<string, unknown>) || undefined),
+    [GrpcStatusCodes.NOT_FOUND]: (p) => new GrpcNotFoundException(p.message),
+    [GrpcStatusCodes.OUT_OF_RANGE]: (p) => new GrpcOutOfRangeException(p.message),
+    [GrpcStatusCodes.PERMISSION_DENIED]: (p) => new GrpcForbiddenException(p.message),
+    [GrpcStatusCodes.RESOURCE_EXHAUSTED]: (p) => new GrpcResourceExhaustedException(p.message),
+    [GrpcStatusCodes.UNAUTHENTICATED]: (p) => new GrpcUnauthorizedException(p.message),
+    [GrpcStatusCodes.UNAVAILABLE]: (p) => new GrpcUnavailableException(p.message),
+    [GrpcStatusCodes.UNIMPLEMENTED]: (p) => new GrpcNotImplementedException(p.message),
+    [GrpcStatusCodes.UNKNOWN]: (p) => new GrpcInternalException(p.message),
+};
+
+const mapPayloadToBaseException = (p: GrpcErrorPayload): BaseGrpcException =>
+    (FACTORY_BY_CODE[p.code] ?? ((x) => new GrpcInternalException(x.message)))(p);

@@ -103,6 +103,21 @@ export class WrappedGrpc implements ClientGrpc {
     /**
      * Cleanup resources and close all circuit breakers
      */
+    private buildErrorContext(err: any, serviceName: string, methodName: string): Record<string, unknown> {
+        return {
+            error: {
+                name: err?.name,
+                code: err?.code,
+                status: err?.status,
+                details: this.sanitizeErrorDetails(err?.details),
+                message: err?.message,
+                metadata: this.sanitizeErrorDetails(err?.metadata),
+            },
+            method: methodName,
+            service: serviceName,
+        };
+    }
+
     private createPipeOperators(serviceName: string, methodName: string): any[] {
         const pipeOps: any[] = [];
 
@@ -146,26 +161,21 @@ export class WrappedGrpc implements ClientGrpc {
         // Add error handling
         pipeOps.push(
             catchError((err) => {
-                const errorContext = {
-                    error: {
-                        name: err.name,
-                        code: err.code,
-                        status: err.status,
-                        details: this.sanitizeErrorDetails(err.details),
-                        message: err.message,
-                        metadata: this.sanitizeErrorDetails(err.metadata),
-                    },
-                    method: methodName,
-                    service: serviceName,
-                };
-
                 if (this.defaultOptions.enableLogging) {
-                    this.logger.error(`gRPC Error in ${serviceName}.${methodName}:`, errorContext);
+                    this.logger.error(
+                        `gRPC Error in ${serviceName}.${methodName}:`,
+                        this.buildErrorContext(err, serviceName, methodName),
+                    );
                 }
 
                 return throwError(
                     () =>
-                        new GrpcClientException(err.message ?? 'gRPC call failed', err.code, err.details, err.metadata),
+                        new GrpcClientException(
+                            err?.message ?? 'gRPC call failed',
+                            err?.code,
+                            err?.details,
+                            err?.metadata,
+                        ),
                 );
             }),
         );
@@ -261,7 +271,6 @@ export class WrappedGrpc implements ClientGrpc {
         });
     }
 
-    // eslint-disable-next-line complexity
     private validateOptions(options: GrpcOptions): void {
         // Safe type checking with lodash
         if (!isNil(options.timeout) && (!isNumber(options.timeout) || options.timeout <= 0)) {

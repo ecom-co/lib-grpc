@@ -38,15 +38,16 @@ sequenceDiagram
 
 ### Options
 
-| Option                  | Type      | Mặc định                         | Mô tả                                                    |
-| ----------------------- | --------- | -------------------------------- | -------------------------------------------------------- | --------- | ---------------------------- |
-| `defaultErrorMessage`   | `string`  | `"An unexpected error occurred"` | Thông điệp chung khi không expose lỗi nội bộ.            |
-| `enableDetailedLogging` | `boolean` | `true`                           | Bật log chi tiết (bao gồm details keys/type...).         |
-| `enableStackTrace`      | `boolean` | `false`                          | Log kèm stack trace.                                     |
-| `exposeInternalErrors`  | `boolean` | `false`                          | Cho phép trả message nội bộ ra HTTP (prod nên để false). |
-| `includeMetadata`       | `boolean` | `false`                          | Log kèm gRPC metadata nếu có.                            |
-| `isDevelopment`         | `boolean` | `false`                          | Thêm trường `debug` trong response và log raw details.   |
-| `logLevel`              | `'debug'  | 'warn'                           | 'error'`                                                 | `'error'` | Mức log sử dụng khi ghi log. |
+| Option                  | Type                       | Mặc định                       | Mô tả                                                    |
+| ----------------------- | -------------------------- | ------------------------------ | -------------------------------------------------------- |
+| `defaultErrorMessage`   | `string`                   | "An unexpected error occurred" | Thông điệp chung khi không expose lỗi nội bộ.            |
+| `enableDetailedLogging` | `boolean`                  | `true`                         | Bật log chi tiết (bao gồm details keys/type...).         |
+| `enableStackTrace`      | `boolean`                  | `false`                        | Log kèm stack trace.                                     |
+| `exposeInternalErrors`  | `boolean`                  | `false`                        | Cho phép trả message nội bộ ra HTTP (prod nên để false). |
+| `includeMetadata`       | `boolean`                  | `false`                        | Log kèm gRPC metadata nếu có.                            |
+| `isDevelopment`         | `boolean`                  | `false`                        | Thêm trường `debug` trong response và log raw details.   |
+| `logLevel`              | `'debug'\|'warn'\|'error'` | `'error'`                      | Mức log sử dụng khi ghi log.                             |
+| `mode`                  | `'http'\|'grpc'`           | `'http'`                       | Cách xử lý exception: map HTTP hoặc rethrow gRPC.        |
 
 :::note
 `updateOptions(partial)` cho phép thay đổi options khi runtime, và `getOptions()` trả về snapshot cấu hình hiện tại.
@@ -333,14 +334,17 @@ describe('UsersController with GrpcClientFilter', () => {
 
 ### Mermaid: Flow xử lý exception
 
-```mermaid
+```mermaid"
 flowchart TD
-  A[GrpcClientException] --> B{headersSent?}
-  B -- Yes --> C[return]
-  B -- No --> D[logException]
-  D --> E[convertGrpcError]
-  E --> F[handleGrpcStatusError]
-  F --> G[response.status(...).json(...)]
+  A[GrpcClientException] --> B{mode}
+  B -- http --> C{headersSent?}
+  C -- Yes --> D[return]
+  C -- No --> E[logException]
+  E --> F[convertGrpcError]
+  F --> G[handleGrpcStatusError]
+  G --> H[response.status(...).json(...)]
+  B -- grpc --> I[toBaseGrpcException]
+  I --> J[throw BaseGrpcException]
 ```
 
 ### Best practices
@@ -348,3 +352,46 @@ flowchart TD
 - **Không expose lỗi nội bộ** ở production: `exposeInternalErrors: false`.
 - **Bật detailed logging** ở staging/dev để debug nhanh.
 - **Đảm bảo WrappedGrpc** được dùng ở client để luôn ném `GrpcClientException` chuẩn.
+
+## Mode (http | grpc)
+
+Granicular control for where the exception is handled:
+
+- `mode: 'http'` (mặc định): map `GrpcClientException` → HTTP response (status + body) theo bảng Mapping gRPC → HTTP phía trên.
+- `mode: 'grpc'`: chuyển `GrpcClientException` thành `BaseGrpcException` tương ứng và ném lại để Nest gRPC trả về gRPC status/payload chuẩn.
+
+```ts:title="HTTP mode (default)"
+app.useGlobalFilters(new GrpcClientFilter({
+  mode: 'http',
+  enableDetailedLogging: true,
+}));
+```
+
+```ts:title="gRPC mode (propagate native gRPC)"
+app.useGlobalFilters(new GrpcClientFilter({
+  mode: 'grpc',
+}));
+```
+
+Note: `WrappedGrpc` chỉ ném `GrpcClientException`. Việc map sang HTTP hoặc gRPC được quyết định ở filter qua `mode`.
+
+### Sequence Diagram (http | grpc)
+
+```mermaid"
+sequenceDiagram
+  participant Caller as Controller/Handler
+  participant Filter as GrpcClientFilter
+  participant E as GrpcClientException
+
+  Caller->>Caller: Call service via WrappedGrpc
+  Caller-->>Caller: throw GrpcClientException (E)
+  Caller->>Filter: catch(E)
+  alt mode == http
+    Filter->>Filter: convertGrpcError()
+    Filter->>Filter: handleGrpcStatusError()
+    Filter-->>Caller: response.status(...).json(...)
+  else mode == grpc
+    Filter->>Filter: toBaseGrpcException(E)
+    Filter-->>Caller: throw BaseGrpcException
+  end
+```

@@ -1,4 +1,3 @@
-/* eslint-disable complexity */
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
 
 import { isArray, isObject, isString, keys } from 'lodash';
@@ -6,6 +5,7 @@ import { isArray, isObject, isString, keys } from 'lodash';
 import { Response } from 'express';
 
 import { GrpcClientException } from '../client/wrapped-client-grpc';
+import { toBaseGrpcException } from '../exceptions';
 
 // gRPC Status codes enum
 export enum GrpcStatus {
@@ -37,6 +37,7 @@ export interface GrpcClientExceptionFilterOptions {
     includeMetadata?: boolean; // Include gRPC metadata in logs
     isDevelopment?: boolean; // Development mode for debug info
     logLevel?: 'debug' | 'error' | 'warn'; // Logging level
+    mode?: 'grpc' | 'http'; // How to handle exception: respond as HTTP or rethrow as gRPC
 }
 
 // Interface cho gRPC Error
@@ -54,8 +55,9 @@ export class GrpcClientFilter implements ExceptionFilter {
             includeMetadata: false,
             isDevelopment: false,
             logLevel: 'error',
+            mode: 'http',
             ...options,
-        };
+        } as Required<GrpcClientExceptionFilterOptions>;
     }
 
     private convertGrpcError(error: GrpcClientException): {
@@ -132,53 +134,20 @@ export class GrpcClientFilter implements ExceptionFilter {
     }
 
     catch(exception: GrpcClientException, host: ArgumentsHost) {
-        const ctx = host.switchToHttp();
-        const response = ctx.getResponse<Response>();
+        switch (this.options.mode) {
+            case 'grpc':
+                throw toBaseGrpcException({
+                    code: exception.code as number,
+                    details: exception.details,
+                    message: exception.message,
+                    metadata: exception.metadata,
+                });
 
-        if (response.headersSent) {
-            if (this.options.enableDetailedLogging) {
-                this.logger.warn('Response already sent, cannot handle exception');
-            }
+            default:
+                this.handleHttpException(exception, host);
 
-            return;
+                return;
         }
-
-        const request = ctx.getRequest<{ method?: string; url?: string }>();
-
-        this.logException(exception, request);
-
-        const { status, details, error, errors, fieldErrors, message } = this.convertGrpcError(exception);
-
-        const responseBody: Record<string, unknown> = {
-            error,
-            message,
-            path: request?.url || 'unknown',
-            statusCode: status,
-            timestamp: new Date().toISOString(),
-        };
-
-        if (details) {
-            responseBody.details = details;
-        }
-
-        if (errors) {
-            responseBody.errors = errors;
-        }
-
-        if (fieldErrors) {
-            responseBody.fieldErrors = fieldErrors;
-        }
-
-        // Add debug information in development mode
-        if (this.options.isDevelopment) {
-            responseBody.debug = {
-                grpcCode: exception.code,
-                originalError: `${error}: ${message}`,
-                stackTrace: this.options.enableStackTrace ? exception.stack : undefined,
-            };
-        }
-
-        response.status(status).json(responseBody);
     }
 
     private handleGrpcStatusError(error: { code?: GrpcStatus; details?: string; message?: string }): {
@@ -330,6 +299,55 @@ export class GrpcClientFilter implements ExceptionFilter {
         }
     }
 
+    private handleHttpException(exception: GrpcClientException, host: ArgumentsHost): void {
+        const ctx = host.switchToHttp();
+        const response = ctx.getResponse<Response>();
+
+        if (response.headersSent) {
+            if (this.options.enableDetailedLogging) {
+                this.logger.warn('Response already sent, cannot handle exception');
+            }
+
+            return;
+        }
+
+        const request = ctx.getRequest<{ method?: string; url?: string }>();
+
+        this.logException(exception, request);
+
+        const { status, details, error, errors, fieldErrors, message } = this.convertGrpcError(exception);
+
+        const responseBody: Record<string, unknown> = {
+            error,
+            message,
+            path: request?.url || 'unknown',
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+        };
+
+        if (details) {
+            responseBody.details = details;
+        }
+
+        if (errors) {
+            responseBody.errors = errors;
+        }
+
+        if (fieldErrors) {
+            responseBody.fieldErrors = fieldErrors;
+        }
+
+        if (this.options.isDevelopment) {
+            responseBody.debug = {
+                grpcCode: exception.code,
+                originalError: `${error}: ${message}`,
+                stackTrace: this.options.enableStackTrace ? exception.stack : undefined,
+            };
+        }
+
+        response.status(status).json(responseBody);
+    }
+
     private logException(exception: GrpcClientException, request: { method?: string; url?: string }): void {
         if (!this.options.enableDetailedLogging) {
             // Basic logging only
@@ -395,7 +413,7 @@ export class GrpcClientFilter implements ExceptionFilter {
      * Update filter options at runtime
      */
     updateOptions(newOptions: Partial<GrpcClientExceptionFilterOptions>): void {
-        this.options = { ...this.options, ...newOptions };
+        this.options = { ...this.options, ...newOptions } as Required<GrpcClientExceptionFilterOptions>;
     }
 
     /**
