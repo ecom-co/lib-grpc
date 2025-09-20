@@ -363,30 +363,38 @@ export class WrappedGrpc implements ClientGrpc {
         if (circuitBreaker) {
             // Use circuit breaker to execute the observable
             return new Observable<T>((subscriber) => {
-                let subscription: undefined | { unsubscribe: () => void };
-
                 circuitBreaker
                     .fire(() => {
-                        subscription = observable.subscribe();
+                        // Apply pipe operators to the observable before converting to promise
+                        const processedObservable = observable.pipe(
+                            ...(this.createPipeOperators(serviceName, methodName) as unknown as Parameters<
+                                typeof observable.pipe
+                            >),
+                        );
 
-                        return firstValueFrom(observable);
+                        return firstValueFrom(processedObservable);
                     })
                     .then((result: unknown) => {
                         subscriber.next(result as T);
                         subscriber.complete();
                     })
                     .catch((error) => {
+                        // Make sure we handle all errors properly to prevent server crashes
+                        if (this.defaultOptions.enableLogging) {
+                            this.logger.error(
+                                `Circuit breaker caught error in ${serviceName}.${methodName}:`,
+                                this.buildErrorContext(error, serviceName, methodName),
+                            );
+                        }
+
                         subscriber.error(error);
                     });
 
+                // No cleanup needed since we're using firstValueFrom
                 return () => {
-                    if (subscription && typeof subscription.unsubscribe === 'function') {
-                        subscription.unsubscribe();
-                    }
+                    // Circuit breaker handles cleanup internally
                 };
-            }).pipe(
-                ...(this.createPipeOperators(serviceName, methodName) as unknown as Parameters<typeof observable.pipe>),
-            ) as Observable<T>;
+            });
         }
 
         // If circuit breaker is disabled, use original logic
